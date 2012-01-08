@@ -1,0 +1,674 @@
+% Set up the document
+\documentclass[a4paper,oneside]{book}
+
+% Include any extra LaTeX packages required
+\usepackage{listings}
+\usepackage{amsmath}
+\usepackage{mathtools}
+\usepackage{hyperref}
+
+% Package and environment configuration
+\lstset{language=c,breaklines=true,tabsize=3,aboveskip=1em,float=tbph,frame=single} % Configure the Listings module for C code by default
+\hypersetup{colorlinks=true,urlcolor=blue}
+\setlength{\parskip}{2ex}
+\setlength{\parindent}{0pt}
+ 
+% Custom command definitions
+\newcommand{\superscript}[1]{\ensuremath{^{\textrm{#1}}}}
+\newcommand{\subscript}[1]{\ensuremath{_{\textrm{#1}}}}
+
+\begin{document}
+\title{Newbie's Guide to AVR Timers}
+\author{Dean Camera}
+\maketitle
+
+\chapter{Introduction}
+The timer systems on the AVR series of Microcontrollers are complex beasts. They have a myriad of uses ranging from simple delay intervals right up to complex PWM (more on this later) generation. However, despite the surface complexity, the function of the timer subsystem can be condensed into one obvious function: to measure time.
+
+We use timers every day---the most simple one can be found on your wrist. A simple clock will time the seconds, minutes and hours elapsed in a given day---or in the case of a twelve hour clock, since the last half-day. AVR timers do a similar job, measuring a given time interval.
+
+The AVR timers are very useful as they can run asynchronous to the main AVR core. This is a fancy way of saying that the timers are separate circuits on the AVR chip which can run independent of the main program, interacting via the control and count registers, and the timer interrupts. Timers can be configured to produce outputs directly to pre-determined pins, reducing the processing load on the AVR core.
+
+One thing that trips those new to the AVR timer is the clock source. Like all digital systems, the timer requires a clock in order to function. As each clock pulse increments the timer's counter by one, the timer measures intervals in periods of one on the input frequency: 
+
+\begin{displaymath}
+	\text{Timer Resolution} = \frac{1}{\text{Input Frequency}}
+\end{displaymath}
+
+This means the smallest amount of time the timer can measure is one period of the incoming clock signal. For instance, if we supply a 100Hz signal to a timer, our period becomes:
+
+\begin{displaymath}
+\begin{array}{rcl}
+	\text{Timer Resolution} & = & \frac{1}{\text{Input Frequency}} \\
+	                        & = & \frac{1}{100 Hz} \\
+	                        & = & .01s
+\end{array}
+\end{displaymath}
+
+For the above example, our period becomes .01 seconds, thus our timer will measure in multiples of this. If we measure a delay to be 45 timer periods, then our total delay will be 45 times .01 seconds, or .45 seconds.
+
+For this tutorial, I will assume the target to be ann ATMEGA16, running at at 1MHz clock. This is a nicely featured AVR containing certain timer functionality we'll need later on. As modern AVRs come running off their internal \(\approx\) 1MHz RC oscillator by default, you can use this without a problem (although do keep in mind the resultant timing measurements will be slightly incorrect due to the RC frequency tolerance).
+
+In the sections dealing with toggling a LED, it is assumed to be connected to PORTB, bit 0 of your chosen AVR (pin 1 of DIP AVRMEGA16).
+
+To start off, we will deal with basic timer functionality and move on from there. 
+
+
+\chapter{Timers running at F\subscript{cpu}}
+
+We'll start with a simple example. We'll create a simple program to flash a LED at about 20Hz. Simple, right?
+
+First, let's look at the pseudo-code required to drive this example:
+
+\begin{center}
+\begin{lstlisting}
+Set up LED hardware
+Set up timer
+
+WHILE forever
+  IF timer value IS EQUAL TO OR MORE THAN 1/20 sec THEN
+    Reset counter
+    Toggle LED
+  END IF
+END WHILE
+\end{lstlisting}
+\end{center}
+
+
+Very simple. We're just starting out, so we'll use the polled method of determining the elapsed time - we'll put in an IF statement in our code to check the current timer value, and act on it once it reaches (or exceeds) a certain value. Before we start on the timer stuff, let's create the skeleton of our project: 
+
+\begin{center}
+\begin{lstlisting}
+#include <avr/io.h>
+
+int main (void)
+{
+   // TODO: Set up LED hardware
+
+   // TODO: Set up timer
+
+   for (;;)
+   {
+      // TODO: Check timer value, reset and toggle LED when count matches 1/20 of a second
+   }
+} 
+\end{lstlisting}
+\end{center}
+
+Extremely simple. I'm going to assume you are familiar with the basics of setting up AVR ports as well as bit manipulation (if you're uncertain about the latter, refer to \href{http://www.avrfreaks.net/index.php?name=PNphpBB2&file=viewtopic&t=37871}{this excellent tutorial}). With that in mind, I'll add in the LED-related code and add in the IF statement: 
+
+\begin{center}
+\begin{lstlisting}
+#include <avr/io.h>
+
+int main (void)
+{
+   DDRB |= (1 << 0); // Set LED as output
+
+   // TODO: Set up timer
+
+   for (;;)
+   {
+      // TODO: Check timer value in if statement, true when count matches 1/20 of a second
+      if ()
+      {
+         PORTB ^= (1 << 0); // Toggle the LED
+
+         // TODO: Reset timer value
+      }
+   }
+} 
+\end{lstlisting}
+\end{center}
+
+Now we need to start dealing with the timer. We want to do nothing more than start it at 1MHz, then check its value later on to see how much time has elapsed. We need to deviate for a second and learn a little about how the timer works in its most basic mode.
+
+The AVR timer circuits come in two different widths, 8 and 16 bit. While the capabilities of the two timer types differ, at the most basic level (simple counting), the only difference is the maximum amount of time the timer can count to before overflowing and resetting back to zero. Those familiar with C will know that an unsigned eight bit value can store a value from \(0 \text{ to } 2^{8}-1\), or 255, before running out of bits to use and becoming zero again. Similarly, an unsigned 16 bit value may store a value from \(0 \text{ to } 2^{16}-1\), or 65535 before doing the same.
+
+As the name suggests, an 8 bit timer stores its value as an eight bit value in its count register, while the 16 bit timer stores its current count value in a pair of eight bit registers. Each advancement of the counter register for any AVR timer indicates that one timer period has elapsed.
+
+Our project needs a fairly long delay, of \(\frac{1}{20}\) of a second. That's quite short to us humans, but to a microcontroller capable of millions of instructions per second it's a long time indeed!
+
+Our timer will be running at the same clock speed as the AVR core to start with, so we know that the frequency is 1MHz. One MHz is \(\frac{1}{1000000}\) of a second, so for each clock of the timer only one millionth of a second has elapsed! Our target is \(\frac{1}{20}\) of a second, so let's calculate the number of timer periods needed to reach this delay:
+
+\begin{displaymath}
+\begin{array}{rcl}
+\text{Target Timer Count} & = & \frac{1}{\text{Target Frequency}} / \frac{1}{\text{Timer Clock Frequency}} - 1 \\
+                          & = & \frac{1}{20} / \frac{1}{1000000 - 1} \\
+                          & = & \frac{.05}{0.000001 - 1} \\
+                          & = & 50000 - 1 \\
+                          & = & 49999
+\end{array}
+\end{displaymath}
+
+So running at 1MHz, our timer needs to count to 49999 before \(\frac{1}{20\text{th}}\) of a second has elapsed - the normal calculated value is decremented by one, as the 0th count of the timer still takes one tick. That's a very large value - too large for an 8 bit value! We'll need to use the 16 bit timer 1 instead.
+
+Firstly, we need to start the timer at the top of our main routine, so that it will start counting. To do this, we need to supply the timer with a clock; as soon as it is clocked it will begin counting in parallel with the AVR's CPU core (this is called synchronous operation). To supply a clock of F\subscript{cpu} to the timer 1 circuits we need to set the CS10 bit (which selects a F\subscript{cpu} prescale of 1 - more on that later) in the \texttt{TCCR1B}, the Timer 1 Control Register B. 
+
+\begin{center}
+\begin{lstlisting}
+#include <avr/io.h>
+
+int main (void)
+{
+   DDRB |= (1 << 0); // Set LED as output
+
+   TCCR1B |= (1 << CS10); // Set up timer
+
+   for (;;)
+   {
+      // TODO: Check timer value in if statement, true when count matches 1/20 of a second
+      if ()
+      {
+         PORTB ^= (1 << 0); // Toggle the LED
+
+         // TODO: Reset timer value
+      }
+   }
+} 
+\end{lstlisting}
+\end{center}
+
+Now, with only one line of code, we've started the hardware timer 1 counting at 1MHz - the same speed as our AVR. It will now happily continue counting independently of our AVR. However, at the moment it isn't very useful, we still need to do something with it!
+
+We want to check the timer's counter value to see if it reaches \(\frac{1}{20}\) of a second, or a value of 49999 at 1MHz as we previously calculated. The current timer value for timer 1 is available in the special 16-bit register, \texttt{TCNT1}. In actual fact, the value is in two 8-bit pair registers \texttt{TCNT1H} (for the high byte) and \texttt{TCNT1L} (for the low byte), however the C library implementation we're using helpfully hides this fact from us.
+
+Let's now add in our check to our code - it's as simple as testing the value of \texttt{TCNT1} and comparing against our wanted value, 49999. To prevent against missed compares (where the timer updates twice between checks so our code never sees the correct value), we use the equal to or more than operator, ``\texttt{>=}''.
+
+\begin{center}
+\begin{lstlisting}
+#include <avr/io.h>
+
+int main (void)
+{
+   DDRB |= (1 << 0); // Set LED as output
+
+   TCCR1B |= (1 << CS10); // Set up timer
+
+   for (;;)
+   {
+      // Check timer value in if statement, true when count matches 1/20 of a second
+      if (TCNT1 >= 49999)
+      {
+         PORTB ^= (1 << 0); // Toggle the LED
+
+         // TODO: Reset timer value
+      }
+   }
+} 
+\end{lstlisting}
+\end{center}
+
+Great! We've only got one more line of code to write, to reset the timer value. We already know the current value is accessed via the \texttt{TCNT1} register for Timer 1, and since this is a read/write register, we can just write the value 0 to it once our required value is reached to rest it.
+
+\begin{center}
+\begin{lstlisting}
+#include <avr/io.h>
+
+int main (void)
+{
+   DDRB |= (1 << 0); // Set LED as output
+
+   TCCR1B |= (1 << CS10); // Set up timer
+
+   for (;;)
+   {
+      // Check timer value in if statement, true when count matches 1/20 of a second
+      if (TCNT1 >= 49999)
+      {
+         PORTB ^= (1 << 0); // Toggle the LED
+
+         TCNT1 = 0; // Reset timer value
+      }
+   }
+} 
+\end{lstlisting}
+\end{center}
+
+And there we have it! We've just created a very basic program that will toggle our LED every \(\frac{1}{20}\) of a second at a 1MHz clock. Testing it out on physical hardware should show the LED being dimmer than normal (due to it being pulsed quickly). Good eyesight might reveal the LED's very fast flickering.
+
+Next, we'll learn about the prescaler so we can try to slow things down a bit. 
+
+
+\chapter{Prescaled Timers}
+
+In part one of this tutorial we learned how to set up our 16-bit timer 1 for a 1/20 second delay. This short (to us humans) delay is actually quite long to our AVR - 50,000 cycles in fact at 1MHz. Notice that Timer 1 can only hold a value of 0-65535 - and we've almost reached that! What do we do if we want a longer delay?
+
+One of the easiest things we can do is to use the timer's prescaler, to trade resolution for duration. The timer prescaler is a piece of timer circuitry which allows us to divide up the incoming clock signal by a power of 2, reducing the resolution (as we can only count in \(2^n\) cycle blocks) but giving us a longer timer range.
+
+Let's try to prescale down our Fcpu clock so we can reduce the timer value and reduce our delay down to a nice 1Hz. The Timer 1 prescaler on the ATMEGA16 has divide values of 1, 8, 64, 256 and 1024 - so let's re-do our calculations and see if we can find an exact value.
+
+Our calculations for our new timer value are exactly the same as before, except we now have a new prescaler term. We'll look at our minimum resolution for each first:
+
+\begin{displaymath}
+\begin{array}{rcl}
+	\text{Timer Resolution} & = & \frac{1}{\text{Input Frequency} / \text{Prescale}} \\
+	                        & = & \frac{\text{Prescale}}{\text{Input Frequency}}
+\end{array}
+\end{displaymath}
+
+For a 1MHz clock, we can construct a table of resolutions using the available prescaler values and a Fcpu of 1MHz.
+
+\begin{center}
+\begin{tabular}{|l|l|}
+	\hline
+	Prescaler Value & Resolution @ 1MHz \\
+	\hline
+	1               & 1uS    \\
+	8               & 8uS    \\
+	64              & 64uS   \\
+	256             & 256uS  \\
+	1024            & 1024uS \\
+	\hline
+\end{tabular}
+\end{center}
+
+If you recall our equation for calculating the timer value for a particular delay in part 1 of this tutorial, you'll remember it is the following: 
+
+\begin{displaymath}
+\text{Target Timer Count} = \frac{1}{\text{Target Frequency}} / \frac{1}{\text{Timer Clock Frequency}} - 1 \\
+\end{displaymath}
+
+However, as we've just altered the prescaler term, the latter half is now different. Substituting in our new resolution equation from above we get: 
+
+\begin{displaymath}
+\text{Target Timer Count} = (\frac{1}{\text{Target Frequency}} / \frac{\text{Prescale}}{\text{Input Frequency}}) - 1 
+\end{displaymath}
+
+Or, rearranged:
+
+\begin{displaymath}
+\text{Target Timer Count} = (\frac{\text{Input Frequency}}{Prescale} / \text{Target Frequency}) - 1  
+\end{displaymath}
+
+Now, we want to see if there is a prescaler value which will give an *exact* delay of 1Hz. One Hertz is equal to one cycle per second, so we want our compare value to be one second long, or 1000000uS. Let's divide that by each of our resolutions and put the results in a different table: 
+
+\begin{center}
+\begin{tabular}{|l|l|}
+	\hline
+	Prescaler Value & Target Timer Count \\
+	\hline
+	1    & 999999   \\
+	8    & 125000   \\
+	64   & 15624    \\
+	256  & 3905.25  \\
+	1024 & 975.5625 \\
+	\hline
+\end{tabular}
+\end{center}
+
+The results are interesting. Of the available prescaler values, we can immediately discount 256 and 1024 - they do not evenly divide into our wanted delay period. They are of course usable, but due to the rounding of the timer count value the resultant delay will be slightly over or under our needed delay. That leaves us with three possible prescales; 1, 8 and 64.
+
+Our next task is to remove the values that aren't possible. On an 8-bit timer, that means discounting values of more than \(2^{8} - 1\), or 255, as the value won't fit into the timer's 8-bit count register. For our 16-bit timer, we have a larger range of 0 to \(2^{16}-1\), or 65535. Only one of our prescaler values satisfies this requirement --- a prescale of 64 --- as the other two possibilities require a timer count value of more bits than our largest 16-bit timer is capable of storing.
+
+Let's go back to our original timer program and modify it to compare against our new value of 15624, which we've found to be 1 second at a prescale of 64 and a F\subscript{cpu} of 1MHz: 
+
+\begin{center}
+\begin{lstlisting}
+#include <avr/io.h>
+
+int main (void)
+{
+   DDRB |= (1 << 0); // Set LED as output
+
+   // TODO: Set up timer at Fcpu/64
+
+   for (;;)
+   {
+      // Check timer value in if statement, true when count matches 1 second
+      if (TCNT1 >= 15624)
+      {
+         PORTB ^= (1 << 0); // Toggle the LED
+
+         TCNT1 = 0; // Reset timer value
+      }
+   }
+} 
+\end{lstlisting}
+\end{center}
+
+Note I've removed the timer setup line, as it is no longer valid. We want to set up our timer to run at Fcpu/64 now. To do this, we need to look at the datasheet of the ATMEGA16 to see which bits need to be set in which control registers.
+
+Checking indicates that we need to set both the \texttt{CS10} and \texttt{CS11} prescaler bits in \texttt{TCCR1B}, so let's add that to our program: 
+
+\begin{center}
+\begin{lstlisting}
+#include <avr/io.h>
+
+int main (void)
+{
+   DDRB |= (1 << 0); // Set LED as output
+
+   TCCR1B |= ((1 << CS10) | (1 << CS11)); // Set up timer at Fcpu/64
+
+   for (;;)
+   {
+      // Check timer value in if statement, true when count matches 1 second
+      if (TCNT1 >= 15624)
+      {
+         PORTB ^= (1 << 0); // Toggle the LED
+
+         TCNT1 = 0; // Reset timer value
+      }
+   }
+}
+\end{lstlisting}
+\end{center}
+
+Compile it, and we're done! Remembering that our timer runs as soon as it gets a clock source, our program will now work, flashing the LED at a frequency of 1Hz.
+
+
+\chapter{Long Timer Delays in Firmware}
+
+So far, we've learned how to use the timers in their most basic counting mode to delay a specified duration. However, we've also discovered a limitation of the timers --- their maximum duration that their timer count registers can hold. We've managed to get a 1Hz delay out of a prescaled 16-bit timer with a prescale, but what if we want a delay of a minute? An hour? A week or year?
+
+The answer is to create a sort of prescaler of our own in software. By making the hardware timer count to a known delay --- say the 1Hz we created earlier --- we can increment a variable each time that period is reached, and only act after the counter is reached a certain value. Let's pseudocode this so we can get a better understanding of what we want to do: 
+
+\begin{center}
+\begin{lstlisting}
+Set up LED hardware
+Set up timer
+Initialise counter to 0
+
+WHILE forever
+  IF timer value IS EQUAL TO 1 sec THEN
+    Increment counter
+    Reset timer
+    IF counter value IS EQUAL TO 60 seconds THEN
+      Toggle LED
+    END IF
+  END IF
+END WHILE
+\end{lstlisting}
+\end{center}
+
+The above pseudocode will build on our last experiment - a timer with a one second count - to produce a long delay of one minute (60 seconds). It's very simple to implement - all we need extra to our last example is an extra IF statement, and a few variable-related lines. First off, we'll re-cap with our complete code as it stands at the moment:
+
+\begin{center}
+\begin{lstlisting}
+#include <avr/io.h>
+
+int main (void)
+{
+   DDRB |= (1 << 0); // Set LED as output
+
+   TCCR1B |= ((1 << CS10) | (1 << CS11)); // Set up timer at Fcpu/64
+
+   for (;;)
+   {
+      // Check timer value in if statement, true when count matches 1 second
+      if (TCNT1 >= 15624)
+      {
+         PORTB ^= (1 << 0); // Toggle the LED
+
+         TCNT1 = 0; // Reset timer value
+      }
+   }
+} 
+\end{lstlisting}
+\end{center}
+
+We need some code to create and initialise a new counter variable to 0, then increment it when the counter reaches one second as our pseudocode states. We also need to add in a test to see if our new variable reaches the value of 60, indicating that one minute has elapsed. 
+
+\begin{center}
+\begin{lstlisting}
+#include <avr/io.h>
+
+int main (void)
+{
+   // TODO: Initialise a new counter variable to zero
+
+   DDRB |= (1 << 0); // Set LED as output
+
+   TCCR1B |= ((1 << CS10) | (1 << CS11)); // Set up timer at Fcpu/64
+
+   for (;;)
+   {
+      // Check timer value in if statement, true when count matches 1 second
+      if (TCNT1 >= 15625)
+      {
+         TCNT1 = 0; // Reset timer value
+         // TODO: Increment counter variable
+
+         // TODO: Check here to see if new counter variable has reached 60
+         if ()
+         {
+            // TODO: Reset counter variable
+
+            PORTB ^= (1 << 0); // Toggle the LED
+         }
+      }
+   }
+}
+\end{lstlisting}
+\end{center}
+
+Now that we have our new program's structure, replacing the \texttt{TODO}s becomes very simple. We want a target count of 60, which is well within the range of an unsigned integer variable, so we'll make our counter variable of type unsigned integer. The rest of the code is fairly straightforward, so I'll add it all in at once:
+
+\begin{center}
+\begin{lstlisting}
+#include <avr/io.h>
+
+int main (void)
+{
+   unsigned char ElapsedSeconds = 0; // Make a new counter variable and initialise to zero
+
+   DDRB |= (1 << 0); // Set LED as output
+
+   TCCR1B |= ((1 << CS10) | (1 << CS11)); // Set up timer at Fcpu/64
+
+   for (;;)
+   {
+      // Check timer value in if statement, true when count matches 1 second
+      if (TCNT1 >= 15624)
+      {
+         TCNT1 = 0; // Reset timer value
+         ElapsedSeconds++;
+
+         if (ElapsedSeconds == 60) // Check if one minute has elapsed
+         {
+            ElapsedSeconds = 0; // Reset counter variable
+
+            PORTB ^= (1 << 0); // Toggle the LED
+         }
+      }
+   }
+} 
+\end{lstlisting}
+\end{center}
+
+Compile and run, and the LED should toggle once per minute. By extending this technique, we can produce delays of an arbitrary duration. One point of interest is to note that any timing errors compound - so if the timer input frequency is 1.1MHz rather than 1.0MHz our one minute timer will be sixty times that small error out in duration. For this reason it is important to ensure that the timer's clock is as accurate as possible, to reduce long-term errors as much as possible.
+
+
+\chapter{The CTC Timer Mode}
+
+Up until now, we've been dealing with the timers in a very basic way - starting them counting, then comparing in our main routine against a wanted value. This is rather inefficient - we waste cycles checking the timer's value every time the loop runs, and slightly inaccurate (as the timer may pass our wanted compare value slightly while processing the loop). What if there was a better way?
+
+Well, there is. The AVR timers usually incorporate a special function mode called "Clear on Timer Compare", or CTC for short. The CTC operating mode does in hardware what we've previously experimented in software; it compares in hardware the current timer value against the wanted value, and when the wanted value is reached a flag in a status register is set and the timer's value reset.
+
+This is extremely handy; because the comparing is done in hardware, all we have to worry about is checking the flag to determine when to execute our LED toggling - much faster than comparing bytes or (in the case of the 16-bit timer) several bytes.
+
+CTC mode is very straightforward. Before we look into the implementation, let's pseudocode what we want to do. 
+
+\begin{center}
+\begin{lstlisting}
+Set up LED hardware
+Set up timer in CTC mode
+Set timer compare value to one second
+
+WHILE forever
+  IF CTC flag IS EQUAL TO 1 THEN
+    Toggle LED
+    Clear CTC flag
+  END IF
+END WHILE 
+\end{lstlisting}
+\end{center}
+
+Short and to the point. Note that the name of the mode is Clear on timer compare - the timer's value will automatically reset each time the compare value is reached, so we only need to clear the flag when the delay is reached. This set-and-forget system is very handy, as once the timer is configured and started we don't need to do anything other than check and clear its status registers.
+
+Now then, we'll grab our previous example, modifying it to fit with our new pseudocode: 
+
+\begin{center}
+\begin{lstlisting}
+#include <avr/io.h>
+
+int main (void)
+{
+   DDRB |= (1 << 0); // Set LED as output
+
+   // TODO: Configure timer mode to CTC
+   // TODO: Set compare value for a compare rate of 1Hz
+
+   TCCR1B |= ((1 << CS10) | (1 << CS11)); // Start timer at Fcpu/64
+
+   for (;;)
+   {
+      if () // TODO: Check CTC flag
+      {
+          PORTB ^= (1 << 0); // Toggle the LED
+
+          // TODO: Clear CTC flag
+      }
+   }
+}
+\end{lstlisting}
+\end{center}
+
+Now, we need to flesh out the skeleton code we have. First up we need to configure our timer for CTC mode. As you might be able to guess, we want to configure our timer, thus the bits we want will be located in the timer's Control registers. The table to look for is the one titled \emph{``Waveform Generation Mode Bit Description''}, and is located in the timer control register descriptions for each timer. This table indicates all the possible timer modes, the bits required to set the timer to use those modes, and the conditions each mode reacts to.
+
+You should note that our previous examples have ignored this table altogether, allowing it to use its default value of all mode bits set to zero. Looking at the table we can see that this setup corresponds to the "Normal" timer mode. We want to use the CTC mode of the timer, so let's look for a combination of control bits that will give us this mode.
+
+Interestingly, it seems that two different combinations in Timer 1 of the ATMEGA16 will give us the same CTC behaviour we desire. Looking to the right of the table, we can see that the ``Top'' value (that is, the maximum timer value for the mode, which corresponds to the compare value in CTC mode) uses different registers for each. Both modes behave in the same manner for our purposes and differ only by the register used to store the compare value, so we'll go with the first.
+
+The table says that for this mode, only bit \texttt{WGM12} needs to be set. It also says that the register used for the compare value is named \texttt{OCR1A}.
+
+Looking at the timer control registers (\texttt{TCCR1A} and \texttt{TCCR1B}) you should notice that the \texttt{WGM1x} bits - used to configure the timer's mode - are spread out over both registers. This is a small pain as you need to find out which bits are in which register, but once found setting up the timer becomes very easy. In fact, as we only have one bit to set --- \texttt{WGM12} --- our task is even easier. The ATMEGA16's datasheet says that \texttt{WGM12} is located in the \texttt{TCCR1B} register, so we need to set that.
+
+\begin{center}
+\begin{lstlisting}
+#include <avr/io.h>
+
+int main (void)
+{
+   DDRB |= (1 << 0); // Set LED as output
+
+   TCCR1B |= (1 << WGM12); // Configure timer 1 for CTC mode
+   // TODO: Set compare value for a compare rate of 1Hz
+
+   TCCR1B |= ((1 << CS10) | (1 << CS11)); // Start timer at Fcpu/64
+
+   for (;;)
+   {
+      if () // TODO: Check CTC flag
+      {
+          PORTB ^= (1 << 0); // Toggle the LED
+
+          // TODO: Clear CTC flag
+      }
+   }
+}
+\end{lstlisting}
+\end{center}
+
+The second task for this experiment is to set the compare value - the value that will reset the timer and set the CTC flag when reached by the timer. We know from the datasheet that the register for this is OCR1A for the MEGA16 in the first CTC timer mode, so all we need is a compare value. From our previous experiment we calculated that 1Hz at 1MHz with a prescaler of 64 needs a compare value of 15624, so let's go with that.
+
+\begin{center}
+\begin{lstlisting}
+#include <avr/io.h>
+
+int main (void)
+{
+   DDRB |= (1 << 0); // Set LED as output
+
+   TCCR1B |= (1 << WGM12); // Configure timer 1 for CTC mode
+   OCR1A   = 15624; // Set CTC compare value to 1Hz at 1MHz AVR clock, with a prescaler of 64
+
+   TCCR1B |= ((1 << CS10) | (1 << CS11)); // Start timer at Fcpu/64
+
+   for (;;)
+   {
+      if () // TODO: Check CTC flag
+      {
+          PORTB ^= (1 << 0); // Toggle the LED
+
+          // TODO: Clear CTC flag
+      }
+   }
+}
+\end{lstlisting}
+\end{center}
+
+There, almost done already! Last thing we need is a way of checking to see if the compare has occurred, and a way to clear the flag once its been set. The place to look for the compare flags is in the timer's Interrupt Flag register --- an odd place it seems, but the reason will become clear in the next section dealing with timer interrupts. The ATMEGA16's Timer 1 interrupt flags are located in the combined register \texttt{TIFR}, and the flag we are interested in is the ``Output Compare A Match'' flag, \texttt{OCF1A}. Note the "A" on the end; Timer 1 on the ATMEGA16 has two CTC channels (named channel A and channel B), which can work independently. We're only using channel A for this experiment.
+
+Checking for a CTC event involves checking the \texttt{OCF1A} flag in this register. That's easy - but what about clearing it? The datasheet includes an interesting note on the subject:
+
+\begin{quote}
+\emph{...OCF1A can be cleared by writing a logic 1 to its bit location}
+\end{quote}
+
+Very strange indeed! In order to clear the CTC flag, we actually need to set it - even though it's already set. Due to some magic circuitry inside the AVR, writing a 1 to the flag when its set will actually cause it to clear itself. This is an interesting behaviour, and is the same across all the interrupt bits. There's a good reason for the flags to be cleared this way, although it is a little outside the scope of this tutorial.
+
+Despite that, we can now add in our last lines of code to get a working example: 
+
+\begin{center}
+\begin{lstlisting}
+#include <avr/io.h>
+
+int main (void)
+{
+   DDRB |= (1 << 0); // Set LED as output
+
+   TCCR1B |= (1 << WGM12); // Configure timer 1 for CTC mode
+   OCR1A   = 15624; // Set CTC compare value to 1Hz at 1MHz AVR clock, with a prescaler of 64
+
+   TCCR1B |= ((1 << CS10) | (1 << CS11)); // Start timer at Fcpu/64
+
+   for (;;)
+   {
+      if (TIFR & (1 << OCF1A))
+      {
+          PORTB ^= (1 << 0); // Toggle the LED
+
+          TIFR = (1 << OCF1A); // clear the CTC flag (writing a logic one to the set flag clears it)
+      }
+   }
+}
+\end{lstlisting}
+\end{center}
+
+And there we have it, a working 1Hz LED flasher using the CTC timer mode! 
+
+
+\chapter{CTC Mode using Interrupts}
+
+For all our previous experiments, we've been using a looped test in our main code to determine when to execute the timer action code. That's fine, but what if we want to shift the responsibility of choosing when to execute the timer code to the AVR hardware instead? To do this, we need to look at the timer interrupts.
+
+Interrupts are events that when enabled, cause the AVR to execute a special routine (called an Interrupt Service Routine, or ISR for short) when the interrupt conditions are met. These interrupts can happen at any time and when executing the main routine is paused while the ISR executes, the main routine continues until the next interrupt. This is useful for us, as it means we can eliminate the need to keep checking the timer value and just respond to its interrupt events instead.
+
+The AVR timers can have several different Interrupts - typically Overflow, Compare and Capture. Overflow occurs when the timer's value rolls past it's maximum and back to zero (for an 8 bit timer, that's when it counts past 11111111 in binary and resets back to 00000000). However, for this section we'll deal with the Compare interrupt, which occurs in CTC mode when the compare value is reached.
+
+Again, we'll pseudocode this to start with: 
+
+\begin{center}
+\begin{lstlisting}
+Set up LED hardware
+Set up timer in CTC mode
+Enable CTC interrupt
+Enable global interrupts
+Set timer compare value to one second
+
+WHILE forever
+END WHILE
+
+ISR Timer Compare
+   Toggle LED
+END ISR 
+\end{lstlisting}
+\end{center}
+
+We can start off this by working with our skeleton main code, used in previous examples. I'll skip the details on the parts already discussed in previous sections.
+
+
+
+\end{document}

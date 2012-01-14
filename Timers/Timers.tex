@@ -64,7 +64,7 @@ We'll start with a simple example. We'll create a simple program to flash a LED 
 First, let's look at the pseudo-code required to drive this example:
 
 \begin{center}
-\begin{lstlisting}
+\begin{lstlisting}[keywordstyle=\color{black},commentstyle=\color{black}]
 Set up LED hardware
 Set up timer
 
@@ -281,7 +281,7 @@ However, as we've just altered the prescaler term, the latter half is now differ
 Or, rearranged:
 
 \begin{displaymath}
-\text{Target Timer Count} = (\frac{\text{Input Frequency}}{Prescale} / \text{Target Frequency}) - 1  
+\text{Target Timer Count} = (\frac{\text{Input Frequency}}{\text{Prescale}} / \text{Target Frequency}) - 1  
 \end{displaymath}
 
 Now, we want to see if there is a prescaler value which will give an *exact* delay of 1Hz. One Hertz is equal to one cycle per second, so we want our compare value to be one second long, or 1000000uS. Let's divide that by each of our resolutions and put the results in a different table: 
@@ -368,7 +368,7 @@ So far, we've learned how to use the timers in their most basic counting mode to
 The answer is to create a sort of prescaler of our own in software. By making the hardware timer count to a known delay --- say the 1Hz we created earlier --- we can increment a variable each time that period is reached, and only act after the counter is reached a certain value. Let's pseudocode this so we can get a better understanding of what we want to do: 
 
 \begin{center}
-\begin{lstlisting}
+\begin{lstlisting}[keywordstyle=\color{black},commentstyle=\color{black}]
 Set up LED hardware
 Set up timer
 Initialise counter to 0
@@ -494,7 +494,7 @@ This is extremely handy; because the comparing is done in hardware, all we have 
 CTC mode is very straightforward. Before we look into the implementation, let's pseudocode what we want to do. 
 
 \begin{center}
-\begin{lstlisting}
+\begin{lstlisting}[keywordstyle=\color{black},commentstyle=\color{black}]
 Set up LED hardware
 Set up timer in CTC mode
 Set timer compare value to one second
@@ -542,7 +542,7 @@ Now, we need to flesh out the skeleton code we have. First up we need to configu
 
 You should note that our previous examples have ignored this table altogether, allowing it to use its default value of all mode bits set to zero. Looking at the table we can see that this setup corresponds to the "Normal" timer mode. We want to use the CTC mode of the timer, so let's look for a combination of control bits that will give us this mode.
 
-Interestingly, it seems that two different combinations in Timer 1 of the ATMEGA16 will give us the same CTC behaviour we desire. Looking to the right of the table, we can see that the ``Top'' value (that is, the maximum timer value for the mode, which corresponds to the compare value in CTC mode) uses different registers for each. Both modes behave in the same manner for our purposes and differ only by the register used to store the compare value, so we'll go with the first.
+Interestingly, it seems that two different combinations in Timer 1 of the ATMEGA16 will give us the same CTC behaviour we desire. Looking to the right of the table, we can see that the \texttt{TOP} value (that is, the maximum timer value for the mode, which corresponds to the compare value in CTC mode) uses different registers for each. Both modes behave in the same manner for our purposes and differ only by the register used to store the compare value, so we'll go with the first.
 
 The table says that for this mode, only bit \texttt{WGM12} needs to be set. It also says that the register used for the compare value is named \texttt{OCR1A}.
 
@@ -654,7 +654,7 @@ The AVR timers can have several different Interrupts - typically Overflow, Compa
 Again, we'll pseudocode this to start with: 
 
 \begin{center}
-\begin{lstlisting}
+\begin{lstlisting}[keywordstyle=\color{black},commentstyle=\color{black}]
 Set up LED hardware
 Set up timer in CTC mode
 Enable CTC interrupt
@@ -871,5 +871,420 @@ Now we have a problem. All the previous chapters have assumed the LED is attache
 
 Timer 1 Channel A's Compare Output is located on \texttt{PD5}, so move the LED there for the rest of this example. Now, let's psudocode:
 
+\begin{center}
+\begin{lstlisting}[keywordstyle=\color{black},commentstyle=\color{black}]
+Set up LED hardware
+Set up timer in CTC mode
+Enable timer 1 Compare Output channel A in toggle mode
+Set timer compare value to one second
+
+WHILE forever
+END WHILE 
+\end{lstlisting}
+\end{center}
+
+Amazing how simple it is, isn't it! Well, we can already fill in almost all of this: 
+
+\begin{center}
+\begin{lstlisting}
+#include <avr/io.h>
+#include <avr/interrupt.h>
+
+int main (void)
+{
+   DDRD |= (1 << 5); // Set LED as output
+
+   TCCR1B |= (1 << WGM12); // Configure timer 1 for CTC mode
+
+   // TODO: Enable timer 1 Compare Output channel A in toggle mode
+
+   OCR1A   = 15624; // Set CTC compare value to 1Hz at 1MHz AVR clock, with a prescaler of 64
+
+   TCCR1B |= ((1 << CS10) | (1 << CS11)); // Start timer at Fcpu/64
+
+   for (;;)
+   {
+
+   }
+}
+\end{lstlisting}
+\end{center}
+
+All we need is to configure the timer so that it'll toggle our channel A output each time the timer value is equal to our compare value. The datasheet has several descriptions for the functionality of the \texttt{COM1Ax} and \texttt{COM1Bx} bits, so we need to find the table corresponding to the mode we're using the timer in.
+
+A CTC mode isn't listed explictly; instead the appropriate table is listed as \textit{``Compare Output mode, Non PWM''}. PWM stands for ``\textbf{P}ulse \textbf{W}idth \textbf{M}odulation'', and will be covered later on in this tutorial. For now, it is sufficient to know that the CTC mode is not a form of PWM and thus the non-PWM bit description table is the one we're looking for.
+
+To make the channel A Compare Output pin toggle on each compare, the datasheet says we need to set bit \texttt{COM1A0} in \texttt{TCCR1A}. That's our missing line, so let's add it in!
+
+\begin{center}
+\begin{lstlisting}
+#include <avr/io.h>
+#include <avr/interrupt.h>
+
+int main (void)
+{
+   DDRD |= (1 << 5); // Set LED as output
+
+   TCCR1B |= (1 << WGM12); // Configure timer 1 for CTC mode
+
+   TCCR1A |= (1 << COM1A0); // Enable timer 1 Compare Output channel A in toggle mode
+
+   OCR1A   = 15624; // Set CTC compare value to 1Hz at 1MHz AVR clock, with a prescaler of 64
+
+   TCCR1B |= ((1 << CS10) | (1 << CS11)); // Start timer at Fcpu/64
+
+   for (;;)
+   {
+
+   }
+} 
+\end{lstlisting}
+\end{center}
+
+Simple, isn't it! We've now created the simplest (code-wise) LED flasher possible using pure hardware functionality. Running this will cause the LED to flash at 1Hz, without any code other than the timer initialization! 
+
+
+\chapter{The Overflow Event}
+
+Well, now that we've had fun creating a LED flasher via a variety of software and hardware CTC methods, we'll move on to one last LED flashing program. This time we'll be using a different Timer event to manage the toggling of the LED: the overflow.
+
+As previously stated, timers store their values into internal 8 or 16 bit registers, depending on the size of the timer being used. These registers can only store a finite number of values, resulting in the need to manage the timer (via prescaling, software extention, etc) so that the interval to be measured fits within the range of the chosen timer.
+
+However, what has not been discussed yet is what happens when the range of the timer is exceeded. Does the AVR explode? Does the application crash? Does the timer automatically stop?
+
+The answer is simple, if rather boring. In the event of the timer register exceeding its capacity, it will automatically roll around back to zero and keep counting. When this occurs, we say that the timer has ``overflowed''.
+
+When an overflow occurs, a bit is set in one of the timer status registers to indicate to the main application that the event has occured. Just like with the CTC hardware, there is also a corresponding bit which can enable an interrupt to be fired each time the timer resets back to zero.
+
+So why would we need the overflow interrupt? Well, I leave that as an excersize to the reader. However, we can demonstrate it here in this tutorial --- via another LED flasher, of course!
+
+Calculating the frequency of the flashing is a little different to our previous examples, as now we have to calculate in reverse (to find the frequency from the timer count and timer resolution rather than the timer count from a known frequency and timer resolution). We'll still be working with our 16-bit timer 1 for this example, to be consistent with previous chapters.
+
+Let's go back to our one of the timer equations we used back in chapter 2: 
+
+\begin{displaymath}
+\text{Target Timer Count} = (\frac{\text{Input Frequency}}{\text{Prescale}} / \text{Target Frequency}) - 1  
+\end{displaymath}
+
+We want to determine the Target Frequency from the other two variables, so let's rearrange: 
+
+\begin{displaymath}
+(\text{Target Timer Count} + 1) * (\text{Prescale} / \text{Input Frequency}) = \frac{1}{\text{Target Frequency}}
+\end{displaymath}
+
+And swap the left and right hand sides to get it into a conventional form:
+
+\begin{displaymath}
+\frac{1}{\text{Target Frequency}} = (\text{Target Timer Count} + 1) * (\text{Prescale} / \text{Input Frequency})
+\end{displaymath}
+
+Since we know that for the overflow equation, the ``Target Timer Count'' becomes the maximum value that can be held by the timer's count register, plus one (as the overflow occurs after the count rolls over from the maximum back to zero). The formula for the maximum value that can be held in a number of bits is: 
+
+\begin{displaymath}
+\text{Max Value} = 2^\text{Bits} - 1 
+\end{displaymath}
+
+But we want one more than that to get the number of timer counts until an overflow occurs: 
+
+\begin{displaymath}
+\text{Counts Until Overflow} = 2^\text{Bits}
+\end{displaymath}
+
+Change ``Max Value'' to the more appropriate ``Target Timer Count'' in the first timer equation:
+
+\begin{displaymath}
+\frac{1}{\text{Target Frequency}} = (\text{Target Timer Count} + 1) * (\text{Prescale} / \text{Input Frequency})
+\end{displaymath}
+
+And substitute in the formula for the counts until overflow to get the timer period equation. Since frequency is just the inverse of period, we can also work out the frequencies of each duration as well: 
+
+\begin{displaymath}
+\text{Target Period} = \frac{1}{Target Frequency}
+\end{displaymath}
+
+\begin{displaymath}
+\text{Target Period} = 2^\text{Bits} * \frac{\text{Prescale}}{\text{Input Frequency}}
+\end{displaymath}
+
+Which is a bit complex, but such is life. Now's the fun part - we can now work out the overflow frequencies and periods for our 16-bit Timer 1 running at different prescales of our AVR's 1MHz system clock:
+
+\begin{displaymath}
+\text{Target Period} = 2^16 * \frac{\text{Prescale}}{\text{Input Frequency}}
+\end{displaymath}
+
+\begin{center}
+\begin{tabular}{|l|l|l|}
+	\hline
+	Prescaler Value & Overflow Frequency & Overflow Period  \\
+	\hline
+	1    & 15.259 Hz & 65.5 ms \\
+	8    & 1.907 Hz  & 0.524 s \\
+	64   & .2384 Hz  & 4.195 s \\
+	256  & .0596 Hz  & 16.78 s \\
+	1024 & .0149 Hz  & 67.11 s \\
+	\hline
+\end{tabular}
+\end{center}
+
+Note how our frequency decreases (and period increases) as our prescaler increases, as it should. Because we have a reasonably slow main system clock, and a large timer count register, we end up with frequencies that are easy to see with the naked eye (with the exception of the case where no prescaler is used). Unlike the CTC method however, we are limited to the frequencies above and cannot change them short of using a smaller timer, different prescaler or different system clock speed --- we lose the precision control that the CTC modes give us.
+
+For this example, we'll use a prescaler of 8, to give a 1.8Hz flashing frequency, and a period of about half a second.
+
+Almost time to get into the code implementation. But first, pseudocode! I'm going to extrapolate on the preceding chapters and jump straight into the ISR-powered example, rather than begin with a polled example. It works in the same manner as previous polled experiments, except for the testing of the overflow bit rather than the CTC bit. 
+
+\begin{center}
+\begin{lstlisting}[keywordstyle=\color{black},commentstyle=\color{black}]
+Set up LED hardware
+Set up timer overflow ISR
+Start timer with a prescale of 8
+
+WHILE forever
+END WHILE
+
+ISR Timer Overflow
+   Toggle LED
+END ISR 
+\end{lstlisting}
+\end{center}
+
+Let's get started. As always, we'll begin with the skeleton program: 
+
+\begin{center}
+\begin{lstlisting}
+#include <avr/io.h>
+#include <avr/interrupt.h>
+
+int main (void)
+{
+   DDRB |= (1 << 0); // Set LED as output
+
+   // TODO: Enable overflow interrupt
+   // TODO: Enable global interrupts
+
+   // TODO: Start timer at Fcpu/8
+
+   for (;;)
+   {
+
+   }
+}
+
+// TODO: Add overflow ISR here 
+\end{lstlisting}
+\end{center}
+
+Let's begin with filling in the bits we can already do. The ISR code is easy; we can use the same ISR as part five, except we'll be changing the compare vector to the overflow vector of timer 1.
+
+Looking in the ATMEGA16 datasheet, the overflow interrupt for timer 1 is obvious --- it's listed as ``TIMER1 OVF'' in the Interrupts chapter. Just like in part five, we need to replace the spaces in the vector name with underscores, and add the ``\texttt{\_vect}'' suffix to the end.
+
+We can also fill in the ``Enable global interrupts'' line, as that is identical to previous chapters and is just the \texttt{sei()} command from the \texttt{<avr/interrupt.h>} header file.
+
+\begin{center}
+\begin{lstlisting}
+#include <avr/io.h>
+#include <avr/interrupt.h>
+
+int main (void)
+{
+   DDRB |= (1 << 0); // Set LED as output
+
+   // TODO: Enable overflow interrupt
+   sei(); // Enable global interrupts
+
+   // TODO: Start timer at Fcpu/8
+
+   for (;;)
+   {
+
+   }
+}
+
+ISR(TIMER1_OVF_vect)
+{
+   PORTB ^= (1 << 0); // Toggle the LED
+} 
+\end{lstlisting}
+\end{center}
+
+Next, we need to figure out how to enable the overflow vector, so that our ISR is run each timer the overflow occurs. The datasheet's 16-bit Timer/Counter section comes to our rescue again, indicating that it is the bit named \texttt{TOIE1} located in the Timer 1 Interrupt Mask register, \texttt{TIMSK}:
+
+\begin{center}
+\begin{lstlisting}
+#include <avr/io.h>
+#include <avr/interrupt.h>
+
+int main (void)
+{
+   DDRB |= (1 << 0); // Set LED as output
+
+   TIMSK |= (1 << TOIE1); // Enable overflow interrupt
+   sei(); // Enable global interrupts
+
+   // TODO: Start timer at Fcpu/8
+
+   for (;;)
+   {
+
+   }
+}
+
+ISR(TIMER1_OVF_vect)
+{
+   PORTB ^= (1 << 0); // Toggle the LED
+}
+\end{lstlisting}
+\end{center}
+
+The last thing we need to do, is start the timer with a prescaler of 8. This should be easy for you to do --- if not, refer back to chapter 2.
+
+The ATMEGA16 Datasheet, Timer 1 section tells us that for a timer running with a prescaler of 8, we need to start it with the bit \texttt{CS11} set in the control register \texttt{TCCR1B}. Adding that to our code finishes our simple program: 
+
+\begin{center}
+\begin{lstlisting}
+#include <avr/io.h>
+#include <avr/interrupt.h>
+
+int main (void)
+{
+   DDRB |= (1 << 0); // Set LED as output
+
+   TIMSK |= (1 << TOIE1); // Enable overflow interrupt
+   sei(); // Enable global interrupts
+
+   TCCR1B |= (1 << CS11); // Start timer at Fcpu/8
+
+   for (;;)
+   {
+
+   }
+}
+
+ISR(TIMER1_OVF_vect)
+{
+   PORTB ^= (1 << 0); // Toggle the LED
+}
+\end{lstlisting}
+\end{center}
+
+All done! This simple program will cause the LED to toggle each time the overflow occurs and serves as a practical use of the overflow interrupt. 
+
+
+\chapter{Overflow as CTC}
+
+One neat application of the overflow event is for creating a CTC timer on AVRs which don't support true hardware CTC. It's not as neat as the pure hardware CTC discussed in part six, but faster than the pure software CTC discussed in part two.
+
+CTC works by having a fixed \texttt{BOTTOM} value --- that's the timer's minimum value --- of zero, and a variable \texttt{TOP} value, the value at which resets the timer and fires the event. However, with the overflow event we seemingly have a fixed \texttt{BOTTOM} of again zero, and a fixed \texttt{TOP} of the maximum timer's value. Not so; using a small trick we can adjust the \texttt{BOTTOM} value to give us the equivelent of a CTC implementation standing on its head.
+
+This tecnique is called timer reloading. When configured, we preload the timer's count register (which is both readable and writeable) with a value above zero. This shortens the time interval before the next overflow event, although only for a single overflow. We can get around that by again reloading the timer's value to our non-zero value inside the overflow event for a hybrid software/hardware CTC.
+
+Psuedocode time!
+
+\begin{center}
+\begin{lstlisting}[keywordstyle=\color{black},commentstyle=\color{black}]
+Set up LED hardware
+Set up timer overflow ISR
+Load timer count register with a precalculated value
+Start timer with a prescale of 8
+
+WHILE forever
+END WHILE
+
+ISR Timer Overflow
+   Toggle LED
+   Reload timer count register with same precalculated value
+END ISR
+\end{lstlisting}
+\end{center}
+
+Let's examine the maths again. From part two, we know that the formula for determining the number of timer clock cycles needed for a given delay is: 
+
+\begin{displaymath}
+\text{Target Timer Count} = (\frac{\text{Input Frequency}}{\text{Prescale}} / \text{Target Frequency}) - 1  
+\end{displaymath}
+
+Which works for a fixed \texttt{BOTTOM} of zero, and a variable \texttt{TOP}. We've got the ``upside-down'' implementation of a fixed \texttt{TOP} of \(0 \text{ to } 2^\text{Bits}-1\) and a variable \texttt{BOTTOM}. Our \texttt{BOTTOM} value becomes the \texttt{TOP} minus the number of clock cycles needed for the equivelent CTC value, so the formula becomes: 
+
+\begin{displaymath}
+\text{Reload Timer Value} = (2^\text{Bits} - 1) - (\frac{\text{Input Frequency}}{\text{Prescale}} / Target Frequency) 
+\end{displaymath}
+
+Let's go with the previous example in part two: a 1Hz flasher, using a 1MHz clock and a prescale of 64. We found the timer count to be 15625 for those conditions. Plugging it into the above Reload Timer Value formula gives: 
+
+\begin{displaymath}
+\begin{array}{rcl}
+\text{Reload Timer Value} & = & (2^\text{Bits} - 1) - 15624 \\
+                          & = & (2^{16} - 1) - 15624 \\
+                          & = & 65535 - 15624 \\
+                          & = & 49911 \\
+\end{array}
+\end{displaymath}
+
+So we need to preload and reload our overflow timer on each overflow with the value 49911 to get our desired 1Hz delay. Since we've already gone over the code for an interrupt-driven overflow example in part seven, we'll build upon that.
+
+\begin{center}
+\begin{lstlisting}
+#include <avr/io.h>
+#include <avr/interrupt.h>
+
+int main (void)
+{
+   DDRB |= (1 << 0); // Set LED as output
+
+   TIMSK |= (1 << TOIE1); // Enable overflow interrupt
+   sei(); // Enable global interrupts
+
+   // TODO: Preload timer with precalculated value
+
+   TCCR1B |= ((1 << CS10) | (1 << CS11)); // Set up timer at Fcpu/64
+
+   for (;;)
+   {
+
+   }
+}
+
+ISR(TIMER1_OVF_vect)
+{
+   PORTB ^= (1 << 0); // Toggle the LED
+   // TODO: Reload timer with precalculated value
+} 
+\end{lstlisting}
+\end{center}
+
+Both the reloading and preloading of the timer takes identical code - we just need to set the timer's count register to the precalculated value. The timer's current count value is avaliable in the \texttt{TCNTx} register, where \textit{x} is the timer's number. We're using the 16-bit timer 1, so the count value is located in \texttt{TCNT1}.
+
+We'll now finish of the example, replacing the unfinished segments:
+
+\begin{center}
+\begin{lstlisting}
+#include <avr/io.h>
+#include <avr/interrupt.h>
+
+int main (void)
+{
+   DDRB |= (1 << 0); // Set LED as output
+
+   TIMSK |= (1 << TOIE1); // Enable overflow interrupt
+   sei(); // Enable global interrupts
+
+   TCNT1 = 49911; // Preload timer with precalculated value
+
+   TCCR1B |= ((1 << CS10) | (1 << CS11)); // Set up timer at Fcpu/64
+
+   for (;;)
+   {
+
+   }
+}
+
+ISR(TIMER1_OVF_vect)
+{
+   PORTB ^= (1 << 0); // Toggle the LED
+   TCNT1  = 49911; // Reload timer with precalculated value
+} 
+\end{lstlisting}
+\end{center}
+
+And done! This is less preferable to the pure hardware CTC mode, as it requires a tiny bit more work on both the programmer and the AVR to function. However, it will work just fine for AVRs lacking the complete CTC timer functionality.
 
 \end{document}

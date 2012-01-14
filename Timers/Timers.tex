@@ -246,7 +246,8 @@ And there we have it! We've just created a very basic program that will toggle o
 Next, we'll learn about the prescaler so we can try to slow things down a bit. 
 
 
-\chapter[Prescaled Timers]{chpPrescaledTimers}
+\label{chp:PrescaledTimers}
+\chapter{Prescaled Timers}
 
 In chapter \ref{chp:TimersFcpu} of this tutorial we learned how to set up our 16-bit timer 1 for a 1/20 second delay. This short (to us humans) delay is actually quite long to our AVR - 50,000 cycles in fact at 1MHz. Notice that Timer 1 can only hold a value of 0-65535 - and we've almost reached that! What do we do if we want a longer delay?
 

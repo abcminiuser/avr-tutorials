@@ -6,9 +6,12 @@
 \usepackage{amsmath}
 \usepackage{mathtools}
 \usepackage{hyperref}
+\usepackage{color}
+\usepackage{xcolor}
 
 % Package and environment configuration
-\lstset{language=c,breaklines=true,tabsize=3,aboveskip=1em,float=tbph,frame=single} % Configure the Listings module for C code by default
+\definecolor{dkgreen}{rgb}{0,0.6,0}
+\lstset{language=c,breaklines=true,tabsize=3,basicstyle=\footnotesize,float=tbph,frame=single,keywordstyle=\color{blue},commentstyle=\color{dkgreen}}
 \hypersetup{colorlinks=true,urlcolor=blue}
 \setlength{\parskip}{2ex}
 \setlength{\parindent}{0pt}
@@ -669,6 +672,204 @@ END ISR
 
 We can start off this by working with our skeleton main code, used in previous examples. I'll skip the details on the parts already discussed in previous sections.
 
+\begin{center}
+\begin{lstlisting}
+#include <avr/io.h>
+
+int main (void)
+{
+   DDRB |= (1 << 0); // Set LED as output
+
+   TCCR1B |= (1 << WGM12); // Configure timer 1 for CTC mode
+
+   // TODO: Enable CTC interrupt
+   // TODO: Enable global interrupts
+
+   OCR1A   = 15624; // Set CTC compare value to 1Hz at 1MHz AVR clock, with a prescaler of 64
+
+   TCCR1B |= ((1 << CS10) | (1 << CS11)); // Start timer at Fcpu/64
+
+   for (;;)
+   {
+
+   }
+}
+
+// TODO: Add compare ISR here 
+\end{lstlisting}
+\end{center}
+
+Note how it's a modified version of the non-interrupt driven CTC example covered in the last section. All we need to do is tell the timer to run the compare ISR we define when it counts up to our compare value, rather then us polling the compare match flag in our main routine loop.
+
+We'll start with creating the ISR first, as that's quite simple. In AVR-GCC --- specifically, the avr-libc Standard C Library that comes with it --- the header file for dealing with interrupts is called (unsurprisingly) ``interrupt.h'' and is located in the \texttt{avr} subdirectory. We need to include this at the top of our program underneath our include to the IO header file. The top of our code should look like this:
+
+\begin{center}
+\begin{lstlisting}
+#include <avr/io.h>
+#include <avr/interrupt.h>
+
+int main (void)
+{
+  ...
+\end{lstlisting}
+\end{center}
+
+This gives us access to the API for dealing with interrupts. We want to create an ISR for the Timer 1 Compare Match event. The syntax for defining an ISR body in AVRGCC is:
+
+\begin{center}
+\begin{lstlisting}
+ISR(VectorName_vect)
+{
+   // Code to execute on ISR fire here
+} 
+\end{lstlisting}
+\end{center}
+
+Where \emph{VectorName} is the name of the ISR vector which our defined ISR handles. The place to go to find this name is the ``Interrupt'' section of the datasheet, which lists the symbolic names for all the ISR vectors that the chosen AVR supports. When writing the vector name into GCC, replace all spaces with underscores, and append ``\texttt{\_vect}'' to the end of the vector's name.
+
+Like in part four we are still dealing with Channel A Compare of Timer 1, so we want the vector named ``TIMER1 COMPA''. In GCC this is called ``\texttt{TIMER1\_COMPA\_vect}'', after performing the transformations outlined in the last paragraph. Once the ISR is defined, we can go ahead and write out it's body, adding the LED toggling code.
+
+\begin{center}
+\begin{lstlisting}
+#include <avr/io.h>
+#include <avr/interrupt.h>
+
+int main (void)
+{
+   DDRB |= (1 << 0); // Set LED as output
+
+   TCCR1B |= (1 << WGM12); // Configure timer 1 for CTC mode
+
+   // TODO: Enable CTC interrupt
+   // TODO: Enable global interrupts
+
+   OCR1A   = 15624; // Set CTC compare value to 1Hz at 1MHz AVR clock, with a prescaler of 64
+
+   TCCR1B |= ((1 << CS10) | (1 << CS11)); // Start timer at Fcpu/64
+
+   for (;;)
+   {
+
+   }
+}
+
+ISR(TIMER1_COMPA_vect)
+{
+   PORTB ^= (1 << 0); // Toggle the LED
+} 
+\end{lstlisting}
+\end{center}
+
+Notice how we don't clear the CTC event flag like in part four --- this is automatically cleared by the AVR hardware once the ISR fires. Neat, isn't it!
+
+Running the code so far won't yield any results. This is because although we have our ISR all ready to handle the CTC event, we haven't enabled it! We need to do two things; enable the ``TIMER1 COMPA'' interrupt specifically, and turn on interrupt handling on our AVR.
+
+The way to turn on our specific interrupt is to look into the second interrupt-related register for our timer, \texttt{TIMSK}. This is the Timer Interrupt Mask register, which turns on and off ISRs to handle specific timer events. Note that on the ATMEGA16 this single register contains the enable bits for all the timer interrupts for all the available timers. We're only interested in the Timer 1 Compare A Match interrupt enable bit, which we can see listed as being called \texttt{OCIE1A} (Output Compare Interrupt Enable, channel A).
+
+By setting that bit we instruct the timer to execute our ISR upon compare match with our specified compare value. Let's put that line into our program's code and see how it all looks. 
+
+\begin{center}
+\begin{lstlisting}
+#include <avr/io.h>
+#include <avr/interrupt.h>
+
+int main (void)
+{
+   DDRB |= (1 << 0); // Set LED as output
+
+   TCCR1B |= (1 << WGM12); // Configure timer 1 for CTC mode
+
+   TIMSK |= (1 << OCIE1A); // Enable CTC interrupt
+
+   // TODO: Enable global interrupts
+
+   OCR1A   = 15624; // Set CTC compare value to 1Hz at 1MHz AVR clock, with a prescaler of 64
+
+   TCCR1B |= ((1 << CS10) | (1 << CS11)); // Start timer at Fcpu/64
+
+   for (;;)
+   {
+
+   }
+}
+
+ISR(TIMER1_COMPA_vect)
+{
+   PORTB ^= (1 << 0); // Toggle the LED
+} 
+\end{lstlisting}
+\end{center}
+
+Only one more thing to do --- enable global interrupts. The AVR microcontrollers have a single control bit which turns on and off interrupt handling functionality. This is used in pieces of code where interrupt handling is not desired, or to disable interrupts while an ISR is already being executed. The latter is done automatically for us, so all we need to do is turn on the bit at the start of our code, and our compare interrupt will start to work.
+
+The command to do this is called \texttt{sei()} in the avr-libc library that ships with WinAVR, and is named to correspond with the assembly instruction which does the same for AVRs (the SEI instruction). That's irrelevant however, as we just need to call the command in our code. 
+
+\begin{center}
+\begin{lstlisting}
+#include <avr/io.h>
+#include <avr/interrupt.h>
+
+int main (void)
+{
+   DDRB |= (1 << 0); // Set LED as output
+
+   TCCR1B |= (1 << WGM12); // Configure timer 1 for CTC mode
+
+   TIMSK |= (1 << OCIE1A); // Enable CTC interrupt
+
+   sei(); //  Enable global interrupts
+
+   OCR1A   = 15624; // Set CTC compare value to 1Hz at 1MHz AVR clock, with a prescaler of 64
+
+   TCCR1B |= ((1 << CS10) | (1 << CS11)); // Start timer at Fcpu/64
+
+   for (;;)
+   {
+
+   }
+}
+
+ISR(TIMER1_COMPA_vect)
+{
+   PORTB ^= (1 << 0); // Toggle the LED
+} 
+\end{lstlisting}
+\end{center}
+
+And our example is finished! Running this will give a nice 1Hz LED flashing, using the timer's event interrupts. The nice thing is that the timer operation is now completely handled for us in hardware --- once set up, we just need to react to the events we've configured. Notice that our main loop is now empty; if this is the case you may put sleep commands inside the main loop to save power between compares. 
+
+
+\chapter{Pure Hardware CTC}
+
+You probably think by now that we've improved our example as much as possible --- after all, what more improvements are there to make? Well, it's time to finish of the CTC topic by looking at the hardware outputs.
+
+All AVR's pins have alternative hardware functions. These functions (currently non re-routable) when activated interface the IO pins directly to the AVR's internal hardware - for instance the \texttt{Tx}/\texttt{Rx} alternative functions which are the direct interface to the AVR's USART subsystem. Alternative pin functions can be very useful; as they can be internally connected straight to a hardware subsystem, the maximum possible performance can be achieved.
+
+In this section, we'll be looking at the Compare Output settings of the AVR timer.
+
+Looking at the timer 1 control registers, we can see a few pairs of bits we've previously ignored, called (for timer 1) \texttt{COM1A1}/\texttt{COM1A0} and \texttt{COM1B1}/\texttt{COM1B0}. Bonus points to anyone who's linked the ``A'' and ``B'' parts of the bit names to the timer compare channels --- you're spot on.
+
+These bits allow us to control the hardware behaviour when a compare occurs. Instead of firing an interrupt, the hardware can be configured to set, clear or toggle the \texttt{OCxy} (where ``x'' is the timer number, ``y'' is the channel letter for timers with more than one channel) hardware pins when a compare occurs. We can use the toggle function with our LED flasher, so that the hardware toggles the LED's state for us automatically, making it a true set-and-forget operation.
+
+Before we do anything else, let's work out which pins of our ATMEGA16 are linked to the Compare Output hardware --- we want the pins with alternative functions starting with ``\texttt{OC}''. On our PDIP package version, that maps to: 
+
+\begin{center}
+\begin{tabular}{|l|l|}
+	\hline
+	GPIO Pin & Alternative Function \\
+	\hline
+	PB3 & OC0  \\
+	PD4 & OC1B \\
+	PD5 & OC1A \\ 
+	\hline
+\end{tabular}
+\end{center}
+
+So timer 0 has one Compare Output channel, while timer 1 has two (channels A and B) as we've already discovered. As always we'll just deal with Channel A in our example.
+
+Now we have a problem. All the previous chapters have assumed the LED is attached to \texttt{PORTB}, bit 0 - but we'll have to move it for this chapter. As stated above the alternative functions cannot be moved to another pin, so we must move moses...I mean, our LED, to the pin with the required alternative function.
+
+Timer 1 Channel A's Compare Output is located on \texttt{PD5}, so move the LED there for the rest of this example. Now, let's psudocode:
 
 
 \end{document}

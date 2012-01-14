@@ -1,0 +1,484 @@
+% Set up the document
+\documentclass[a4paper,oneside]{book}
+
+% Include any extra LaTeX packages required
+\usepackage{listings}
+\usepackage{amsmath}
+\usepackage{mathtools}
+\usepackage{hyperref}
+\usepackage{color}
+\usepackage{xcolor}
+
+% Package and environment configuration
+\definecolor{dkgreen}{rgb}{0,0.6,0}
+\lstset{language=c,breaklines=true,tabsize=3,basicstyle=\footnotesize,float=tbph,frame=single,keywordstyle=\color{blue},commentstyle=\color{dkgreen}}
+\hypersetup{colorlinks=true,urlcolor=blue,linkcolor=black}
+\setlength{\parskip}{2ex}
+\setlength{\parindent}{0pt}
+ 
+% Custom command definitions
+\newcommand{\superscript}[1]{\ensuremath{^{\textrm{#1}}}}
+\newcommand{\subscript}[1]{\ensuremath{_{\textrm{#1}}}}
+
+\begin{document}
+\title{Modularizing C Code: Managing large projects}
+\author{Dean Camera}
+\maketitle
+
+\cleardoublepage
+\subsection*{Preface}
+Text \copyright Dean Camera, 2012. All rights reserved.
+
+This document may be freely distributed without payment to the author, provided that it is not sold, and the original author information is retained.
+
+For more tutorials, project information, and author contact information, please visit \href{http://www.fourwalledcubicle.com}[http://www.fourwalledcubicle.com].
+
+\cleardoublepage
+\tableofcontents
+\cleardoublepage
+
+There comes a time when a project has outgrown the scope of a single file. Perhaps it's the point at with you need to add more RAM to your computer just to open your project, or when you realize you've just spent 45 minutes tracking down the timeout function you swore you wrote two weeks ago. Whatever the reason, it's time to split your project up into several manageable files, which you can then keep better track of. This tutorial will give several pointers about the intricacies of how to accomplish such a task.
+
+\section{Identify Common Routines}
+
+First of all, it makes sense to group all the common routines into their own files --- eg. one for USART management, one for your protocol layer handler, one for your main code. You should determine which functions can be moved into a separate files while still retaining some connection with one another. Let's take the following example of routines:
+
+\begin{center}
+\begin{lstlisting}
+GetUSARTByte()
+TurnOnStatusLed()
+SetupSpeaker()
+TurnOffStatusLed()
+SetupUSART()
+main()
+CheckTempSensorVal()
+ProcessByte()
+Beep()
+EnableUSART()
+SleepMode()
+CheckADCChanel()
+\end{lstlisting}
+\end{center}
+
+We can split these routines up into several small files --- one for the USART, one for the main (and misc) routines, one for the speaker and one for the ADC (and related processing).
+
+Let's take a look at our proposed new structure:
+
+USART.c
+\begin{center}
+\begin{lstlisting}
+SetupUSART()
+EnableUSART()
+GetUSARTByte()
+ProcessByte()
+\end{lstlisting}
+\end{center}
+
+Speaker.c
+\begin{center}
+\begin{lstlisting}
+Code:
+SetupSpeaker()
+Beep()
+\end{lstlisting}
+\end{center}
+
+ADC.c
+\begin{center}
+\begin{lstlisting}
+CheckADCChanel()
+CheckTempSensorVal()
+\end{lstlisting}
+\end{center}
+
+Main.c
+\begin{center}
+\begin{lstlisting}
+main()
+SleepMode()
+TurnOnStatusLed()
+TurnOffStatusLed()
+\end{lstlisting}
+\end{center}
+
+Ok, looks pretty good! We'll cut and paste those routines into the appropriate files in the same project directory, so now we have a bunch of C files containing related functions.
+
+\section{Adding the new files to your makefile}
+
+Even though you've made no functional changes to your code outside moving certain routines to a different file, you still need to tell the compiler, linker and associated GCC tools where everything is now located. Open up your makefile, and you should find some lines similar to the following (if your makefile is based off the WinAVR template):
+
+\begin{center}
+\begin{lstlisting}[language=make]
+# List C source files here. (C dependencies are automatically generated.)
+
+SRC = $(TARGET).c
+\end{lstlisting}
+\end{center}
+
+What we now need to do is add the file names of the newly created files. We'll take our above example here again for consistency. Our new extra files are called \texttt{ADC.c}, \texttt{Speaker.c} and \texttt{USART.c}, so we need to add those to the SRC line of the makefile.
+
+\begin{center}
+\begin{lstlisting}
+# List C source files here. (C dependencies are automatically generated.)
+
+SRC = $(TARGET).c ADC.c USART.c Speaker.c
+\end{lstlisting}
+\end{center}
+
+Now, that'll work, but it's a real pain for future expansion. To make our life easier, we'll place the filenames on their own line in alphabetical order. To indicate a line continuation in a makefile, we need to place a ``\textbackslash'' at the end of the continued lines:
+
+\begin{center}
+\begin{lstlisting}[language=make]
+# List C source files here. (C dependencies are automatically generated.)
+
+SRC = $(TARGET).c \
+      ADC.c       \
+      Speaker.c   \
+      USART.c
+\end{lstlisting}
+\end{center}
+
+\textit{NB: Watch the file case! To GCC and its related utilities, \texttt{MAIN.C} is not the same as \texttt{Main.c}. Make sure you put down the file names in the exact same case as they appear inside explorer, or you'll get build errors!}
+
+\section{Naming the routines}
+
+One problem with our multi-file setup remains; routines are still hard to find across the files. One might easily identify the file location of our mythical \texttt{CheckADCChanel()} routine, but what about \texttt{SleepMode()}? Obviously a naming convention becomes important.
+
+Now, this is where it gets tricky. There's really no set standard for function names, and every one prefers something different. It is important to choose which one you prefer, but it is ten times more important to remain consistent in your scheme across your entire project.
+
+The first word, symbol or acronym in your function name should indicate the file it is located in. For example, all the ADC functions will have ``ADC'' at their start, and all the speaker-related functions in \texttt{Speaker.c} would have ``Speaker'' at their start. You can eliminate repetition in a name as it becomes self-explanatory what the function is referring to due to the prefix --- thus \texttt{CheckADCChanel()} would become \texttt{ADCCheckChannel()} (or similar), rather than the superfluous \texttt{ADCCheckADCChanel()}.
+
+I'll use our example again and put here a possible function naming scheme. Note that the \texttt{main()} function's name remains unchanged as it is mandated by the C standard:
+
+USART.c
+\begin{center}
+\begin{lstlisting}
+USARTSetup()
+USARTEnable()
+USARTGetByte()
+USARTProcessByte()
+\end{lstlisting}
+\end{center}
+
+Speaker.c
+\begin{center}
+\begin{lstlisting}
+SpeakerSetup()
+SpeakerBeep()
+\end{lstlisting}
+\end{center}
+
+ADC.c
+\begin{center}
+\begin{lstlisting}
+ADCCheckChanel()
+ADCCheckTempSensorVal()
+\end{lstlisting}
+\end{center}
+
+Main.c
+\begin{center}
+\begin{lstlisting}
+main()
+MainSleepMode()
+MainTurnOnStatusLed()
+MainTurnOffStatusLed()
+\end{lstlisting}
+\end{center}
+
+This new scheme makes finding the location of a routine quick and easy, without the need for a multi-file search utility. Don't forget to change the function prototypes in your header file to the match your new function names!
+
+\section{Making functions static}
+
+Static functions is possibly something you've never heard of up to now. The process of declaring a function to be static indicates to the compiler that its scope is limited to the source file in which it is contained - in essence it makes the function private, only accessible by other function in the same C file. This is good practice from two standpoints; one, it prevents outside code from calling module-internal functions (and reduces the number of functions exposed by the file) and two, it gives the compiler a better chance to optimize the function in a better way that if it was assumed to be able to be called by any other source file.
+
+Identify which of your functions are module-internal, and add in the static keyword. In our example, let's say that the \texttt{USARTEnable()} function was only called by \texttt{USARTSetup()}, and never by any other source file. Assume that the USARTEnable function is declared as the following:
+
+\begin{center}
+\begin{lstlisting}
+void USARTSetup(void)
+\end{lstlisting}
+\end{center}
+
+We'll make the function static to reduce its scope to inside \texttt{USART.c}:
+
+\begin{center}
+\begin{lstlisting}
+static void USARTEnable(void)
+\end{lstlisting}
+\end{center}
+
+Note that the static keyword should be added to both the prototype in the header file, as well as to the function in the C source file.
+
+\section{Global variables}
+
+Your project probably has quite a few global variables declared at the top of your main source file. You need to cut-and-paste them each into the most appropriate source file. Don't worry if it's referenced by more than one file; dealing with that case will be handled later in the tutorial. For now, just put it in the C file you deem to be the best for it.
+
+Just in case you've done this, remember the following golden rule: header files should declare, not define. A header file should not itself result directly in generated code - it is there to help the compiler and yourself link together your C code, located in C files. If you've put any globals inside your header file, move them out now.
+
+\section{Splitting the header file}
+
+This is where the hard part begins. So far we've successfully split up the contents of our project into several C files, but we're still stuck with one large header file containing all our definitions. We need to break our header file up into separate files for each of our C modules.
+
+First, we'll create a bunch of .h header files of the same names as our \texttt{.c} files. Next, we'll move the obvious things from the master header file, the function prototypes. Copy each of the prototypes into the respective header files.
+
+Next, the macros. Again, move the macros into the header file where they are used the most. If you have any generic macros that are used in the majority of your source files, create a new \texttt{GlobalDefinitions.h} header file and place them there. Do the same for any typedefs you may have in your header file.
+
+Let's assume our above example has the following original header file:
+
+\begin{center}
+\begin{lstlisting}
+#define StatusLedRed     (1 << 3)
+#define StatusLedGreen     (1 << 2)
+#define ADCTempSensChannel 5
+#define BitMask(x) (1 << x)
+
+typedef unsigned char USARTByte;
+
+USARTByte GetUSARTByte(void);
+void      TurnOnStatusLed(void);
+void      SetupSpeaker(void);
+void      TurnOffStatusLed(void);
+void      SetupUSART(void);
+int       main(void);
+int       CheckTempSensorVal(void);
+void      ProcessByte(USARTByte);
+void      Beep(void);
+void      EnableUSART(void);
+void      SleepMode(void);
+int       CheckADCChanel(char);
+\end{lstlisting}
+\end{center}
+
+We can split this into our new header files like thus:
+
+USART.h
+\begin{center}
+\begin{lstlisting}
+typedef unsigned char USARTByte;
+
+void        USARTSetup(void)
+static void USARTEnable(void)
+USARTByte   USARTGetByte(void)
+void        USARTProcessByte(USARTByte)
+\end{lstlisting}
+\end{center}
+
+Speaker.h
+\begin{center}
+\begin{lstlisting}
+void SpeakerSetup(void)
+void SpeakerBeep(void)
+\end{lstlisting}
+\end{center}
+
+ADC.h
+\begin{center}
+\begin{lstlisting}
+#define ADCTempSensChannel 5
+
+int ADCCheckChanel(char)
+int ADCCheckTempSensorVal(void)
+\end{lstlisting}
+\end{center}
+
+Main.h
+\begin{center}
+\begin{lstlisting}
+#define StatusLedRed     (1 << 3)
+#define StatusLedGreen     (1 << 2)
+
+int main(void)
+void MainSleepMode(void)
+void MainTurnOnStatusLed(void)
+void MainTurnOffStatusLed(void)
+\end{lstlisting}
+\end{center}
+
+Pretty straightforward - using our renamed functions, the job becomes easy. The only issue is the orphaned macro \texttt{BitMask()}, which we'll assume is used by all the files. As discussed, we'll place that into a separate header file called \texttt{GlobalDefinitions.h}.
+
+\section{Renaming the macros}
+
+As with the function names, the macros should also be renamed to indicate where they are located. Again, use whatever convention you prefer.
+
+\section{Global variables revisited}
+
+Now comes the time to fix up those global variable references from before. You're faced with a problem; your global variable is declared in one file, but it's used in two or more. How do you tell the other files to use the declaration you already made?
+
+The answer is the use of the ``extern'' keyword. This keyword indicates to the compiler that a global of the specified name and type has been declared elsewhere, and so the references are fixed up by the linker when the project is built. Inside the header file of the C module containing the global, add the same line of code (sans any initialization value) but add the extern keyword. Say we have the following:
+
+USART.c
+\begin{center}
+\begin{lstlisting}
+unsigned char LastCommand = 0x00;
+\end{lstlisting}
+\end{center}
+
+We can add a reference to the global in \texttt{USART.h} to make it visible in our other C modules:
+
+USART.h
+\begin{center}
+\begin{lstlisting}
+extern unsigned char LastCommand;
+\end{lstlisting}
+\end{center}
+
+Do this for each of your global variables that are accessed in C files other than the one in which it is contained.
+
+\section{Including the header files}
+
+Our final task is to link our header files to the relevant C files. Firstly, each \texttt{.c} file should include its own header file. In the C language, for header files located in the project's current directory, we use quotes around the file names:
+
+USART.c
+\begin{center}
+\begin{lstlisting}
+#include "USART.h"
+\end{lstlisting}
+\end{center}
+
+Speaker.c
+\begin{center}
+\begin{lstlisting}
+#include "Speaker.h"
+\end{lstlisting}
+\end{center}
+
+ADC.c
+\begin{center}
+\begin{lstlisting}
+#include "ADC.h"
+\end{lstlisting}
+\end{center}
+
+Main.c
+\begin{center}
+\begin{lstlisting}
+#include "Main.h"
+\end{lstlisting}
+\end{center}
+
+Next, we need to include the library header files relevant to each C module. For example, our \texttt{Main.c} and \texttt{Speaker.c} files both make use of the \texttt{<avr/io.h>} header files. System headers should have angled brackets instead of quotes:
+
+Speaker.h
+\begin{center}
+\begin{lstlisting}
+#include <avr/io.h>
+\end{lstlisting}
+\end{center}
+
+Main.h
+\begin{center}
+\begin{lstlisting}
+#include <avr/io.h>
+\end{lstlisting}
+\end{center}
+
+Rinse and repeat for each of the required system header files inside the header of each C module.
+
+The last task of this step is to include the header files used by each module. For example, if a function in Main.c calls a function in \texttt{ADC.c}, we need our Main.h header file to include the \texttt{ADC.h} header file.
+
+\section{Header file protection}
+
+The last thing to do before our conversion is complete, is to protect our header files from multiple inclusion. Take the following example. Say that Main and ADC both refer to each other:
+
+Main.h
+\begin{center}
+\begin{lstlisting}
+#include "ADC.h"
+\end{lstlisting}
+\end{center}
+
+ADC.h
+\begin{center}
+\begin{lstlisting}
+#include "Main.h"
+\end{lstlisting}
+\end{center}
+
+What happens when this is compiled? The preprocessor will look at \texttt{Main.h}, then include \texttt{ADC.h}. However, \texttt{ADC.h} includes \texttt{Main.h}, which again includes \texttt{ADC.h}, etc...
+
+To guard against this problem, we can use preprocessor defines. The following code snippet is the basic protection setup:
+
+\begin{center}
+\begin{lstlisting}
+#ifndef MAIN_H
+#define MAIN_H
+
+// Header file contents
+
+#endif
+\end{lstlisting}
+\end{center}
+
+This construct, when applied to each of your header files, will protect against multiple inclusions. As each C file is compiled, the associated header file is included, as well as any other referenced header files (via includes in the C file's header file). As each header is included, a check is performed to see if the header's unique token is already defined, and if so the inclusion halts to prevent recursion. If the token is not already defined, the preprocessor defines it and looks at the remainder of the header file's contents. By giving each header file a different token (typically the header's filename in \texttt{ALL CAPS}, and the period replaced by an underscore), this system will prevent any preprocessor troubles.
+
+Let's take a final look at how our mythical C file's headers might look like:
+
+USART.h
+\begin{center}
+\begin{lstlisting}
+#ifndef USART_H
+#define USART_H
+
+typedef unsigned char USARTByte;
+
+void        USARTSetup(void)
+static void USARTEnable(void)
+USARTByte   USARTGetByte(void)
+void        USARTProcessByte(USARTByte)
+
+extern unsigned char LastCommand;
+
+#endif
+\end{lstlisting}
+\end{center}
+
+Speaker.h
+\begin{center}
+\begin{lstlisting}
+#ifndef SPEAKER_H
+#define SPEAKER_H
+
+void SpeakerSetup(void)
+void SpeakerBeep(void)
+
+#endif
+\end{lstlisting}
+\end{center}
+
+ADC.h
+\begin{center}
+\begin{lstlisting}
+#ifndef ADC_H
+#define ADC_H
+
+#define ADC_TEMPSENSORCHANNEL 5
+
+int ADCCheckChanel(char)
+int ADCCheckTempSensorVal(void)
+
+#endif
+\end{lstlisting}
+\end{center}
+
+Main.h
+\begin{center}
+\begin{lstlisting}
+#ifndef MAIN_H
+#define MAIN_H
+
+#define MAIN_STATLED_RED     (1 << 3)
+#define MAIN_STATLED_GREEN   (1 << 2)
+
+int  main(void)
+void MainSleepMode(void)
+void MainTurnOnStatusLed(void)
+void MainTurnOffStatusLed(void)
+
+#endif
+\end{lstlisting}
+\end{center}
+
+Voila, we now have a separated, maintainable project! 
+
+\end{document}

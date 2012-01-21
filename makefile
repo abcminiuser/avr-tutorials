@@ -6,5 +6,6 @@ all:
 	$(MAKE) -C Interrupts $@ -s
 	$(MAKE) -C ManagingLargeProjects $@ -s
 	$(MAKE) -C Progmem $@ -s
+	$(MAKE) -C ProgrammingMethods $@ -s	
 	@echo
 	@echo Operation \"make $@\" complete.

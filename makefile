@@ -5,5 +5,6 @@ all:
 	$(MAKE) -C Timers $@ -s
 	$(MAKE) -C Interrupts $@ -s
 	$(MAKE) -C ManagingLargeProjects $@ -s
+	$(MAKE) -C Progmem $@ -s
 	@echo
 	@echo Operation \"make $@\" complete.

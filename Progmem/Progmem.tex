@@ -1,0 +1,356 @@
+% Set up the document
+\documentclass[a4paper,oneside]{book}
+
+% Include any extra LaTeX packages required
+\usepackage{listings}
+\usepackage{amsmath}
+\usepackage{mathtools}
+\usepackage{hyperref}
+\usepackage{color}
+\usepackage{xcolor}
+
+% Package and environment configuration
+\definecolor{dkgreen}{rgb}{0,0.6,0}
+\lstset{language=c,breaklines=true,tabsize=3,basicstyle=\footnotesize,float=tbph,frame=single,keywordstyle=\color{blue},commentstyle=\color{dkgreen}}
+\hypersetup{colorlinks=true,urlcolor=blue,linkcolor=black}
+\setlength{\parskip}{2ex}
+\setlength{\parindent}{0pt}
+ 
+% Custom command definitions
+\newcommand{\superscript}[1]{\ensuremath{^{\textrm{#1}}}}
+\newcommand{\subscript}[1]{\ensuremath{_{\textrm{#1}}}}
+
+\begin{document}
+\title{GCC and the PROGMEM Attribute}
+\author{Dean Camera}
+\maketitle
+
+\cleardoublepage
+\subsection*{Preface}
+Text \copyright Dean Camera, 2012. All rights reserved.
+
+This document may be freely distributed without payment to the author, provided that it is not sold, and the original author information is retained.
+
+For more tutorials, project information, donation information and author contact information, please visit \href{http://www.fourwalledcubicle.com}{www.fourwalledcubicle.com}.
+
+\cleardoublepage
+\tableofcontents
+\cleardoublepage
+
+
+\label{chp:intro}
+\chapter{Introduction}
+
+The \lstinline{PROGMEM} attribute is always a source of confusion for those beginning with AVR-GCC. The \lstinline{PROGMEM} attribute is a powerful one and holds the potential to save a lot of RAM, which is something of a limited commodity on many AVRs. Before you can use the PROGMEM attribute, you must first understand what it does and why it is useful.
+
+When strings are used in a program, they are commonly ``hard-coded'' into the firmware source code:
+
+\begin{center}
+\begin{lstlisting}
+	LCD_puts("Hardcoded String");
+\end{lstlisting}
+\end{center}
+
+While this seems the most logical way of using strings, it is \emph{not} the most optimal. Common sense and intuition would dictate that the compiler would store the string in the program memory, and read it out byte-by-byte inside the \lstinline{LCD_puts()} routine. But this is not what happens.
+
+Because the \lstinline{LCD_puts()} routine (or other string routines) are designed to work with strings in RAM, the compiler is forced to read out the entire string constant from program memory into RAM, and then pass the string's RAM pointer to the routine (in this case \lstinline{LCD_puts()}). It certainly works but the RAM wastage adds up to significant amounts with each string. Why?
+
+Initial variable values and strings are copied out from program memory into RAM as part of the C startup routines, which execute before your \lstinline{main()} function. Those startup routines give your globals their initial values, as well as ensure that all strings are inside RAM so they can be passed to your desired string handling routines. As more strings are added to your program, more data must be copied to RAM at startup and the more RAM is used up by holding static (unchanging) data.
+
+The solution to the problem is forcing strings to stay in program memory and only be read out as they are needed. This is not a simple task and requires string routines specifically designed to handle strings kept solely inside the program memory space.
+
+Using the \lstinline{const} modifier on your string variables is a natural solution --- but a wrong one. A ``const'' variable can only not be modified by the program code, but it does not explicitly prevent the variable value from being copied out to the AVRs RAM on startup. Some compilers implicitly do this for you, but GCC needs to be explicitly told that the contents must live in program memory for the entire duration of the program's execution.
+
+\label{chp:pgmspace}
+\chapter{Basic PROGMEM Use}
+
+The \textit{avr-libc} library contains a header file, \lstinline{<avr/pgmspace.h>}, which contains all the interfacing information needed to allow you to specify data which is to be kept inside the AVR's flash memory. To use the pgmspace.h functions, you need to include the header at the start of your C file(s):
+
+\begin{center}
+\begin{lstlisting}
+#include <avr/pgmspace.h>
+\end{lstlisting}
+\end{center}
+
+To force a string into program memory, we can now use the \lstinline{PROGMEM} attribute modifier on our string constants. An example of a global string which is stored into program memory and not copied out at execution time is:
+
+\begin{center}
+\begin{lstlisting}
+char FlashString[] PROGMEM = "This is a string held completely in flash memory.";
+\end{lstlisting}
+\end{center}
+
+In older AVR-GCC versions, variables tagged with the \lstinline{PROGMEM} attribute don't have to also be marked as \lstinline{const}, however this is changing in newer releases. To prevent compile time warnings, we add this to the variable's declaration:
+
+\begin{center}
+\begin{lstlisting}
+const char FlashString[] PROGMEM = "This is a string held completely in flash memory.";
+\end{lstlisting}
+\end{center}
+
+Now that the \lstinline{PROGMEM} string has a const" modifier, we cannot try to modify it in our code. The pgmspace.h header also exposes a neat little macro, \lstinline{PSTR()}, which by some GCC magic allows you to create inline strings:
+
+\begin{center}
+\begin{lstlisting}
+LCD_puts(PSTR("Program Memory String"));
+\end{lstlisting}
+\end{center}
+
+This stops you from having to clutter your program up with hundreds of variables which hold one-time-used strings. The downside to using the PSTR macro rather than a PROGMEM modified string variable is that you can only use the \lstinline{PSTR()} string once.
+
+However, we now have a problem --- now all your code doesn't work! What's wrong?
+
+
+The problem is that your string functions are expecting the string to be inside RAM. When you pass a string to a routine, you are in fact just passing a pointer to the start of the string in RAM. The string handling routine then just loads the bytes of the string one-by-one, starting from the pointer's location. But our \lstinline{PROGMEM} strings are not in RAM, so the pointer to them is invalid.
+
+A pointer to a string stored in \lstinline{PROGMEM} returns the address in flash memory at which the string is stored. It's still a valid pointer, it's just pointing to a different memory space. To use \lstinline{PROGMEM} strings in our application, we need to make our string routines \lstinline{PROGMEM}-pointer aware.
+
+
+Again, \lstinline{pgmspace.h} comes to our rescue. It contains several functions and macros which deal with \lstinline{PROGMEM}-based strings. First, you have all your standard string routines (\lstinline{memcpy()}, \lstinline{strcmp()}, etc.) with a ``\lstinline{_P}'' postfix denoting that the function deals with the FLASH memory space. For example, to compare a RAM-based string with a \lstinline{PROGMEM}-based string, you would use the \lstinline{strcmp_P()} function:
+
+\begin{center}
+\begin{lstlisting}
+strcmp_P("RAM STRING", PSTR("FLASH STRING"));
+\end{lstlisting}
+\end{center}
+
+For a full list of the avaliable string functions, check out the \textit{avr-libc} documentation which is installed with your WinAVR or Atmel Toolchain installation.
+
+But what if you have your own string function, like a USART-transmitting routine? Lets look at a typical example:
+
+\begin{center}
+\begin{lstlisting}
+void USART_TxString(const char *data)
+{
+   while (*data != '\0')
+     USART_Tx(*data++);
+}
+\end{lstlisting}
+\end{center}
+
+This relies on the routine \lstinline{USART_Tx()}, which for the purposes of this example we will assume to be predefined as a function which transmits a single passed character through the AVR's USART. Now, how do we change our routine to use a \lstinline{PROGMEM} string?
+
+The \lstinline{pgmspace.h} headed exposes a macro which is important for \lstinline{PROGMEM}-aware routines; \lstinline{pgm_read_byte()}. This macro takes a \lstinline{PROGMEM} pointer as its argument, and returns the byte located at that pointer value. To mark that our new routine deals in \lstinline{PROGMEM} strings, let's append a ``\lstinline{_P}'' to it's name just like the other routines in \lstinline{pgmspace.h}:
+
+\begin{center}
+\begin{lstlisting}
+void USART_TxString_P(const char *data)
+{
+   while (pgm_read_byte(data) != 0x00)
+     USART_Tx(pgm_read_byte(data++));
+}
+\end{lstlisting}
+\end{center}
+
+Now we have our \lstinline{PROGMEM}-aware routine, we can use \lstinline{PROGMEM}-attributes strings:
+
+\begin{center}
+\begin{lstlisting}
+USART_TxString_P(PSTR("FLASH STRING"));
+\end{lstlisting}
+\end{center}
+
+Or:
+
+\begin{center}
+\begin{lstlisting}
+const char TestFlashStr[] PROGMEM = "FLASH STRING";
+USART_TxString_P(TestFlashStr);
+\end{lstlisting}
+\end{center}
+
+This should give you a basic idea of how to store strings and keep them in flash memory space. What follows is the second half of this tutorial, for more advanced uses of the \lstinline{PROGMEM} attribute.
+
+
+\label{chp:advprogmem}
+\chapter{More advanced uses of PROGMEM}
+
+Ok, so by now you should be able to create and use your own simple strings stored in program memory. But that's not the end of the \lstinline{PROGMEM} road --- there's still plenty more to learn! In this chapter, I'll cover two slightly more advanced techniques using the \lstinline{PROGMEM} attribute. The first part will lead on to the second, so please read both.
+
+\section{Storing data arrays in program memory}
+
+It's important to realize that all static data in your program can be kept in program memory without being read out into RAM. While strings are by far the most common reason for using the \lstinline{PROGMEM} attribute, you can also store arrays too.
+
+This is especially the case when you are dealing with font arrays for a LCD, or the like. Consider the following (trimmed) code for an Atmel AVR Butterfly LCD font table:
+
+\begin{center}
+\begin{lstlisting}
+static unsigned int LCD_SegTable[] PROGMEM =
+{
+    0xEAA8,     // '*'
+    0x2A80,     // '+'
+    0x4000,     // ','
+    0x0A00,     // '-'
+    0x0A51,     // '.' Degree sign
+    0x4008,     // '/'
+}
+\end{lstlisting}
+\end{center}
+
+Because we've added the \lstinline{PROGMEM} attribute, the table is now stored firmly in flash memory. The overall savings for a table this size is negligible, but in a practical application the data to be stored may be many times the size shown here --- and without the \lstinline{PROGMEM} attribute, all that will be copied into RAM.
+
+First thing to notice here is that the table data is of the type \lstinline{unsigned int}. This means that our data is two bytes long (for the AVR), and so our \lstinline{prgm_read_byte()} macro won't suffice for this instance.
+
+Thankfully, another macro exists; \lstinline{pgm_read_word()}. A word for the AVR is two bytes long --- the same size as an \lstinline{int}. Because of this fact, we can now make use of it to read out our table data. If we wanted to grab the fifth element of the array, the following extract would complete this purpose:
+
+\begin{center}
+\begin{lstlisting}
+pgm_read_word(&LCD_SegTable[4])
+\end{lstlisting}
+\end{center}
+
+Note that we are taking the address of the fourth element of \lstinline{LCD_SegTable}, which is an address in flash and not RAM due to the table having the \lstinline{PROGMEM} attribute.
+
+\section{PROGMEM Pointers}
+
+It's hard to remember that there is a layer of abstraction between flash memory access --- unlike RAM variables we can't just reference the contents at will without macros to manage the separate memory space --- macros such as \lstinline{prgm_read_byte()}. But when it all really starts confusing is when you have to deal with pointers to \lstinline{PROGMEM} strings which are also held in \lstinline{PROGMEM}.
+
+Why could this possibly be useful you ask? Well, i'll start as usual with a short example.
+
+\begin{center}
+\begin{lstlisting}
+char MenuItem1[] = "Menu Item 1";
+char MenuItem2[] = "Menu Item 2";
+char MenuItem3[] = "Menu Item 3";
+
+char* MenuItemPointers[] = {MenuItem1, MenuItem2, MenuItem3};
+\end{lstlisting}
+\end{center}
+
+Here we have three strings containing menu function names. We also have an array which points to each of these three items. Let's use our pretend function \lstinline{USART_TxString()} from part I of this tutorial. Say we want to print out the menu item corresponding with a number the user presses, which we'll assume is returned by an imaginary function named \lstinline{USART_GetNum()}. Our (pseudo-)code might look like this:
+
+\begin{center}
+\begin{lstlisting}
+#include <avr/io.h>
+
+char MenuItem1[] = "Menu Item 1";
+char MenuItem2[] = "Menu Item 2";
+char MenuItem3[] = "Menu Item 3";
+
+char* MenuItemPointers[] = {MenuItem1, MenuItem2, MenuItem3};
+
+void main (void)
+{
+   while (1) // Eternal Loop
+   {
+      char EnteredNum = USART_GetNum();
+
+      USART_TxString(MenuItemPointers[EnteredNum]);
+   }
+}
+\end{lstlisting}
+\end{center}
+
+Those confident with the basics of C will see no problems with this - it's all non-\lstinline{PROGMEM} data and so it all can be interacted with in the manner of which we are accustomed. But what happens if the menu item strings are placed in \lstinline{PROGMEM}?
+
+\begin{center}
+\begin{lstlisting}
+#include <avr/io.h>
+#include <avr/pgmspace.h>
+
+const char MenuItem1[] PROGMEM = "Menu Item 1";
+const char MenuItem2[] PROGMEM = "Menu Item 2";
+const char MenuItem3[] PROGMEM = "Menu Item 3";
+
+char* MenuItemPointers[] = {MenuItem1, MenuItem2, MenuItem3};
+
+void main (void)
+{
+   while (1) // Eternal Loop
+   {
+      char EnteredNum = USART_GetNum();
+
+      USART_TxString_P(MenuItemPointers[EnteredNum]);
+   }
+}
+\end{lstlisting}
+\end{center}
+
+Easy! We add the \lstinline{PROGMEM} attribute to our strings and then substitute the RAM-aware \lstinline{USART_TxString()} routine with the \lstinline{PROGMEM}-aware one we delt with in part I, \lstinline{USART_TxString_P()}. I've also added in the \lstinline{const} modifier as explained in part I, since it's good practice. But what if we want to save a final part of RAM and store our pointer table in \lstinline{PROGMEM} also? This is where it gets slightly more complicated.
+
+Let's try to modify our program to put the pointer array into \lstinline{PROGMEM} and see if it works.
+
+\begin{center}
+\begin{lstlisting}
+#include <avr/io.h>
+#include <avr/pgmspace.h>
+
+const char MenuItem1[] PROGMEM = "Menu Item 1";
+const char MenuItem2[] PROGMEM = "Menu Item 2";
+const char MenuItem3[] PROGMEM = "Menu Item 3";
+
+char* MenuItemPointers[] PROGMEM = {MenuItem1, MenuItem2, MenuItem3};
+
+void main (void)
+{
+   while (1) // Eternal Loop
+   {
+      char EnteredNum = USART_GetNum();
+
+      USART_TxString_P(MenuItemPointers[EnteredNum]);
+   }
+}
+\end{lstlisting}
+\end{center}
+
+Hmm, no luck. The reason is simple: although the pointer table contains valid pointers to strings in \lstinline{PROGMEM}, now that it is also in \lstinline{PROGMEM} we need to read it via the \lstinline{pgm_read_x()} macros.
+
+First, it's important to know how pointers in GCC are stored.
+
+Pointers in GCC are usually two bytes long, i.e. 16 bits. A 16-bit pointer is the smallest sized integer capable of holding the address of any byte within 64kb of memory. Because of this, our \lstinline{uint8_t*} typed pointer table's elements are all 16-bits long. The data the pointer is addressing is an unsigned character of 8 bits, but the pointer itself is 16 bits wide.
+
+Ok, so now we know our pointer size. How can we read our 16-bit pointer out of \lstinline{PROGMEM}? With the \lstinline{pgm_read_word()} macro of course!
+
+\begin{center}
+\begin{lstlisting}
+#include <avr/io.h>
+#include <avr/pgmspace.h>
+
+const char MenuItem1[] PROGMEM = "Menu Item 1";
+const char MenuItem2[] PROGMEM = "Menu Item 2";
+const char MenuItem3[] PROGMEM = "Menu Item 3";
+
+char* MenuItemPointers[] PROGMEM = {MenuItem1, MenuItem2, MenuItem3};
+
+void main (void)
+{
+   while (1) // Eternal Loop
+   {
+      char EnteredNum = USART_GetNum();
+
+      USART_TxString_P(pgm_read_word(&MenuItemPointers[EnteredNum]));
+   }
+}
+\end{lstlisting}
+\end{center}
+
+Almost there! GCC will probably give you warnings with code like this, but will most likely generate the correct code. The problem is the typecast; \lstinline{pgm_read_word()| is returning a word-sized value while \lstinline{USART_TxString_P()} is expecting (if you look back at the parameters for the function in part I) a \lstinline{char*} pointer type. While the sizes of the two data types are the same (remember, the pointer is 16-bits!) to the compiler it looks like we are trying to do the code equivalent of shoving a square peg in a round hole.
+
+To instruct the compiler that we really do want to use that 16-bit return value of \lstinline{pgm_read_word()} as a pointer to a const char in flash memory, we need to typecast it to a pointer in the form of \lstinline{char*}. Our final program will now look like this:
+
+\begin{center}
+\begin{lstlisting}
+#include <avr/io.h>
+#include <avr/pgmspace.h>
+
+const char MenuItem1[] PROGMEM = "Menu Item 1";
+const char MenuItem2[] PROGMEM = "Menu Item 2";
+const char MenuItem3[] PROGMEM = "Menu Item 3";
+
+char* MenuItemPointers[] PROGMEM = {MenuItem1, MenuItem2, MenuItem3};
+
+void main (void)
+{
+   while (1) // Eternal Loop
+   {
+      char EnteredNum = USART_GetNum();
+
+      USART_TxString_P((char*)pgm_read_word(&MenuItemPointers[EnteredNum]));
+   }
+}
+\end{lstlisting}
+\end{center}
+
+I recommend looking through the \textit{avrlib-c} documentation of the \lstinline{<avr/pgmspace.h} header documentation section for information about the other \lstinline{PROGMEM} related library functions avaliable. Other functions --- such as \lstinline{pgm_read_dword()}, which reads four bytes (double that of a word for the AVR architecture) --- behave in a similar manner to the functions detailed in this tutorial and might be of use for your end-application.
+
+\end{document}

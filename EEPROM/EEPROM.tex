@@ -1,0 +1,298 @@
+% Set up the document
+\documentclass[a4paper,oneside]{book}
+
+% Include any extra LaTeX packages required
+\usepackage{listings}
+\usepackage{amsmath}
+\usepackage{mathtools}
+\usepackage{hyperref}
+\usepackage{color}
+\usepackage{xcolor}
+\usepackage{textcomp}
+
+% Package and environment configuration
+\definecolor{dkgreen}{rgb}{0,0.6,0}
+\lstset{language=c,breaklines=true,tabsize=3,basicstyle=\footnotesize,float=tbph,frame=single,keywordstyle=\color{blue},commentstyle=\color{dkgreen}}
+\hypersetup{colorlinks=true,urlcolor=blue,linkcolor=black}
+\setlength{\parskip}{2ex}
+\setlength{\parindent}{0pt}
+ 
+% Custom command definitions
+\newcommand{\superscript}[1]{\ensuremath{^{\textrm{#1}}}}
+\newcommand{\subscript}[1]{\ensuremath{_{\textrm{#1}}}}
+
+\begin{document}
+\title{Using the EEPROM memory in AVR-GCC}
+\author{Dean Camera}
+\maketitle
+
+\cleardoublepage
+\subsection*{Preface}
+Text \copyright Dean Camera, 2012. All rights reserved.
+
+This document may be freely distributed without payment to the author, provided that it is not sold, and the original author information is retained.
+
+For more tutorials, project information, donation information and author contact information, please visit \href{http://www.fourwalledcubicle.com}{www.fourwalledcubicle.com}.
+
+\cleardoublepage
+\tableofcontents
+\cleardoublepage
+
+\chapter{Introduction}
+
+\section{What is the EEPROM memory and why would I use it?}
+
+Most of the AVRs in Atmel's product line contain at least some internal EEPROM memory. EEPROM, short for \textbf{E}lectronically \textbf{E}rasable \textbf{R}ead-\textbf{O}nly \textbf{M}emory, is a form of non-volatile memory with a reasonably long lifespan. Because it is non-volatile, it will retain its information during periods of no power and thus is a great place for storing sparingly changing data such as device parameters.
+
+The AVR internal EEPROM memory has a limited lifespan of 100,000 writes per EEPROM page --- reads are unlimited.
+
+\section{How is is accessed?}
+
+The AVR's internal EEPROM is accessed via special registers inside the AVR, which control the address to be written to (EEPROM uses byte addressing), the data to be written (or the data which has been read) as well as the flags to instruct the EEPROM controller to perform a write or a read.
+
+The C language does not have any standards mandating how memory other than a single flat model (SRAM in AVRs) is accessed or addressed. Because of this, just like storing data into program memory via your program, every compiler has a unique implementation based on what the author believed was the most logical system.
+
+This tutorial will focus on the GCC compiler.
+
+
+\chapter{Using the avr-libc EEPROM library routines}
+
+The avr-libc library, included with WinAVR and the Atmel AVR Toolchain, contains prebuilt library routines for EEPROM access and manipulation. Before we can make use of those routines, we need to include the eeprom library header \lstinline{<avr/eeprom.h>}.
+
+At the moment, we now have access to the eeprom memory, via the routines now provided by \lstinline{<avr/eeprom.h>}. There are three main types of EEPROM access: byte, word and block. Each type has both a write and a read variant, for obvious reasons. The names of the routines exposed by our new headers are:
+
+\begin{center}
+\begin{lstlisting}
+uint8_t eeprom_read_byte (const uint8_t *addr)
+void eeprom_write_byte (uint8_t *addr, uint8_t value)
+uint16_t eeprom_read_word (const uint16_t *addr)
+void eeprom_write_word (uint16_t *addr, uint16_t value)
+void eeprom_read_block (void *pointer_ram, const void *pointer_eeprom, size_t n)
+void eeprom_write_block (void *pointer_eeprom, const void *pointer_ram, size_t n)
+\end{lstlisting}
+\end{center}
+
+In AVR-GCC, a word is two bytes while a block is an arbitrary number of bytes which you supply (think string buffers, or customer data types you create).
+
+To start, lets try a simple example and try to read a single byte of EEPROM memory, let's say at location 46. Our code might look like:
+
+\begin{center}
+\begin{lstlisting}
+#include <avr/eeprom.h>
+
+void main(void)
+{
+    uint8_t ByteOfData;
+
+    ByteOfData = eeprom_read_byte((uint8_t*)46);
+}
+\end{lstlisting}
+\end{center}
+
+This will read out location 46 of the EEPROM and put it into our new variable named \lstinline{ByteOfData}. How does it work? Firstly, we declare our byte variable, which I'm sure you're familiar with:
+
+\begin{center}
+\begin{lstlisting}
+uint8_t ByteOfData;
+\end{lstlisting}
+\end{center}
+
+Now, we then call our \lstinline{eeprom_read_byte()} routine, which expects a pointer to a byte in the EEPROM space. We're working with a constant and known address value of 46, so we add in the typecast to transform that number 46 into a pointer for the \lstinline{eeprom_read_byte()} function.
+
+EEPROM words can be written and read in much the same way, except they require a pointer to an int:
+
+\begin{center}
+\begin{lstlisting}
+#include <avr/eeprom.h>
+
+void main(void)
+{
+    uint16_t WordOfData;
+
+    WordOfData = eeprom_read_word((uint16_t*)46);
+}
+\end{lstlisting}
+\end{center}
+
+But what about larger datatypes, or strings? This is where the block commands come in.
+
+
+\chapter{EEPROM Block Access}
+
+The block commands of the avr-libc \lstinline{<avr/eeprom.h>} header differ from the word and byte functions shown above. Unlike it's smaller cousins, the block commands are both routines which return nothing, and thus operate on a variable you supply internally. Let's look at the function declaration for the block reading command.
+
+\begin{center}
+\begin{lstlisting}
+void eeprom_read_block (void *pointer_ram, const void *pointer_eeprom, size_t n)
+\end{lstlisting}
+\end{center}
+
+Wow! It looks hard, but in practise it's not. It may be using a concept you're not familiar with though, \lstinline{void}-type pointers.
+
+Normal pointers specify the size of the data type in their declaration (or typecast), for example \lstinline{uint8_t*} is a pointer to an unsigned byte and \lstinline{int16_t*} is a pointer to a signed int. But lstinline{void} is not a variable type we can create, so what does it mean?
+
+\lstinline{void} type pointers are useful when the exact type of the data being pointed to is not known by a function, or is unimportant. A Void is mearly a pointer to a memory location, with the data stored at that location being important but the type of data stored at that location not being important. Why is a \lstinline{void} pointer used?
+
+Using a \lstinline{void} pointer means that the block read/write functions can deal with any datatype you like, since all the function does is copy data from one address space to another. The function doesn't care what data it copies, only that it copies the correct number of bytes.
+
+Ok, that's enough of a derail --- back to our function. The block commands expect a void pointer to a RAM location, a void pointer to an EEPROM location and a value specifying the number of bytes to be written or read from the buffers. In our first example let's try to read out 10 bytes of memory starting from EEPROM address 12 into a string.
+
+\begin{center}
+\begin{lstlisting}
+#include <avr/eeprom.h>
+
+void main(void)
+{
+    uint8_t StringOfData[10];
+
+    eeprom_read_block((void*)&StringOfData, (const void*)12, 10);
+}
+\end{lstlisting}
+\end{center}
+
+Again, looks hard doesn't it! But it isn't; let's break down the arguments we're sending to the \lstinline{eeprom_read_block()} function.
+
+\begin{center}
+\begin{lstlisting}
+(void*)&StringOfData
+\end{lstlisting}
+\end{center}
+
+The first argument is the RAM pointer. The \lstinline{eeprom_read_block()} routine modifes our RAM buffer and so the pointer type it's expecting is a \lstinline{void} pointer. Our buffer is of the type \lstinline{uint8_t}, so we need to typecast its address to the necessary \lstinline{void} type.
+
+\begin{center}
+\begin{lstlisting}
+(const void*)12
+\end{lstlisting}
+\end{center}
+
+Reading the EEPROM won't change it, so the second parameter is a pointer of the type \lstinline{const void}. We're currently using a fixed constant as an address, so we need to typecast that constant to a pointer just like with the byte and word reading examples.
+
+\begin{center}
+\begin{lstlisting}
+10
+\end{lstlisting}
+\end{center}
+
+Obviously, this the number of bytes to be read. We're using a constant but a variable could be supplied instead.
+
+The block write function is used in the same manner, except for the write routine the RAM pointer is of the type \lstinline{const void} and the EEPROM is just a plain \lstinline{void} pointer.
+
+\chapter{Using the EEMEM attribute}
+
+You should now know how to read and write to the EEPROM using fixed addresses. But that's not very practical! In a large application, maintaining all the fixed addresses is an absolute nightmare at best. But there's a solution --- the \lstinline{EEMEM} attribute.
+
+Defined by the same \lstinline{<avr/eeprom.h} header, the \lstinline{EEMEM} attribute instructs the GCC compiler to assign your variable into the EEPROM address space, instead of the SRAM address space like a normal variable. For example, we could allocate addresses for several variables, like so:
+
+\begin{center}
+\begin{lstlisting}
+#include <avr/eeprom.h>
+
+uint8_t  EEMEM NonVolatileChar;
+uint16_t EEMEM NonVolatileInt;
+uint8_t  EEMEM NonVolatileString[10];
+\end{lstlisting}
+\end{center}
+
+Although the compiler allocates addresses to your EEMEM variables, it cannot directly access them. For example, the following code will NOT function as intended:
+
+\begin{center}
+\begin{lstlisting}
+#include <avr/eeprom.h>
+
+uint8_t  EEMEM NonVolatileChar;
+uint16_t EEMEM NonVolatileInt;
+uint8_t  EEMEM NonVolatileString[10];
+
+int main(void)
+{
+    uint8_t SRAMchar;
+
+    SRAMchar = NonVolatileChar;
+}
+\end{lstlisting}
+\end{center}
+
+That code will instead assign the RAM variable ``SRAMchar'' to whatever is located in SRAM at the address of ``NonVolatileChar'', and so the result will be incorrect. Like variables stored in program memory, we need to still use the eeprom read and write routines discussed above.
+
+So lets try to fix our broken code. We're trying to read out a single byte of memory. Let's try to use the \lstinline{eeprom_read_byte()} routine.
+
+\begin{center}
+\begin{lstlisting}
+#include <avr/eeprom.h>
+
+uint8_t  EEMEM NonVolatileChar;
+uint16_t EEMEM NonVolatileInt;
+uint8_t  EEMEM NonVolatileString[10];
+
+int main(void)
+{
+    uint8_t SRAMchar;
+
+    SRAMchar = eeprom_read_byte(&NonVolatileChar);
+}
+\end{lstlisting}
+\end{center}
+
+It works! Why don't we try to read out the other variables while we're at it. Our second variable is an int, so we need the \lstinline{eeprom_read_word()} routine:
+
+\begin{center}
+\begin{lstlisting}
+#include <avr/eeprom.h>
+
+uint8_t  EEMEM NonVolatileChar;
+uint16_t EEMEM NonVolatileInt;
+uint8_t  EEMEM NonVolatileString[10];
+
+int main(void)
+{
+    uint8_t  SRAMchar;
+    uint16_t SRAMint;
+
+    SRAMchar = eeprom_read_byte(&NonVolatileChar);
+    SRAMint  = eeprom_read_word(&NonVolatileInt);
+}
+\end{lstlisting}
+\end{center}
+
+And our last one is a string, so we'll have to use the block read command:
+
+\begin{center}
+\begin{lstlisting}
+#include <avr/eeprom.h>
+
+uint8_t  EEMEM NonVolatileChar;
+uint16_t EEMEM NonVolatileInt;
+uint8_t  EEMEM NonVolatileString[10];
+
+int main(void)
+{
+    uint8_t  SRAMchar;
+    uint16_t SRAMint;
+    uint8_t  SRAMstring[10];   
+
+    SRAMchar = eeprom_read_byte(&NonVolatileChar);
+    SRAMint  = eeprom_read_word(&NonVolatileInt);
+    eeprom_read_block((void*)&SRAMstring, (const void*)&NonVolatileString, 10);
+}
+\end{lstlisting}
+\end{center}
+
+
+\chapter{Setting initial values}
+
+Finally, I'll discuss the issue of setting an initial value to your EEPROM variables.
+
+Upon compilation of your program with the default makefile, GCC will output two Intel-HEX format files. One will be your \texttt{.HEX} which contains your program data (and which is loaded into your AVR's memory), and the other will be a \texttt{.EEP} file. The \texttt{.EEP} file contains the default EEPROM values, which you can load into your AVR via your programmer's EEPROM programming functions.
+
+To set a default EEPROM value in GCC, simply assign a value to your \lstinline{EEMEM} variable, like thus:
+
+\begin{center}
+\begin{lstlisting}
+uint8_t EEMEM SomeVariable = 12;
+\end{lstlisting}
+\end{center}
+
+Note that if the \texttt{.EEP} file isn't loaded, your program will most likely run with the entire EEPROM being set to \lstinline{0xFF}, or at least unknown data. You should devise a way to ensure that no problems will arise via some sort of protection scheme (eg, loading in several values and checking against known start values).
+
+\end{document}

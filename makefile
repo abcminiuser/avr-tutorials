@@ -7,5 +7,6 @@ all:
 	$(MAKE) -C ManagingLargeProjects $@ -s
 	$(MAKE) -C Progmem $@ -s
 	$(MAKE) -C ProgrammingMethods $@ -s	
+	$(MAKE) -C EEPROM $@ -s	
 	@echo
 	@echo Operation \"make $@\" complete.

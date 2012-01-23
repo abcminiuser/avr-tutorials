@@ -157,7 +157,7 @@ Our timer will be running at the same clock speed as the AVR core to start with,
 \end{array}
 \end{displaymath}
 
-So running at 1MHz, our timer needs to count to 49999 before \(\frac{1}{20\text{th}}\) of a second has elapsed - the normal calculated value is decremented by one, as the 0th count of the timer still takes one tick. That's a very large value - too large for an 8 bit value! We'll need to use the 16 bit timer 1 instead.
+So running at 1MHz, our timer needs to count to 49999 before \(\frac{1}{20}\)th of a second has elapsed - the normal calculated value is decremented by one, as the 0th count of the timer still takes one tick. That's a very large value - too large for an 8 bit value! We'll need to use the 16 bit timer 1 instead.
 
 Firstly, we need to start the timer at the top of our main routine, so that it will start counting. To do this, we need to supply the timer with a clock; as soon as it is clocked it will begin counting in parallel with the AVR's CPU core (this is called synchronous operation). To supply a clock of F\subscript{cpu} to the timer 1 circuits we need to set the CS10 bit (which selects a F\subscript{cpu} prescale of 1 - more on that later) in the \texttt{TCCR1B}, the Timer 1 Control Register B. 
 
@@ -1027,7 +1027,7 @@ And substitute in the formula for the counts until overflow to get the timer per
 Which is a bit complex, but such is life. Now's the fun part - we can now work out the overflow frequencies and periods for our 16-bit Timer 1 running at different prescales of our AVR's 1MHz system clock:
 
 \begin{displaymath}
-\text{Target Period} = 2^16 * \frac{\text{Prescale}}{\text{Input Frequency}}
+\text{Target Period} = 2^{16} * \frac{\text{Prescale}}{\text{Input Frequency}}
 \end{displaymath}
 
 \begin{center}

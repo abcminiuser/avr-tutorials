@@ -6,8 +6,9 @@ all:
 	$(MAKE) -C Interrupts $@ -s
 	$(MAKE) -C ManagingLargeProjects $@ -s
 	$(MAKE) -C Progmem $@ -s
-	$(MAKE) -C ProgrammingMethods $@ -s	
-	$(MAKE) -C EEPROM $@ -s	
-	$(MAKE) -C USART $@ -s	
+	$(MAKE) -C ProgrammingMethods $@ -s
+	$(MAKE) -C EEPROM $@ -s
+	$(MAKE) -C USART $@ -s
+	$(MAKE) -C InterruptUSART $@ -s
 	@echo
 	@echo Operation \"make $@\" complete.

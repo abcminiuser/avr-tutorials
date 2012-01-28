@@ -8,5 +8,6 @@ all:
 	$(MAKE) -C Progmem $@ -s
 	$(MAKE) -C ProgrammingMethods $@ -s	
 	$(MAKE) -C EEPROM $@ -s	
+	$(MAKE) -C USART $@ -s	
 	@echo
 	@echo Operation \"make $@\" complete.

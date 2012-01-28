@@ -1,0 +1,309 @@
+% Set up the document
+\documentclass[a4paper,oneside]{book}
+
+% Include any extra LaTeX packages required
+\usepackage{listings}
+\usepackage{amsmath}
+\usepackage{mathtools}
+\usepackage{hyperref}
+\usepackage{color}
+\usepackage{xcolor}
+\usepackage{textcomp}
+
+% Package and environment configuration
+\definecolor{dkgreen}{rgb}{0,0.6,0}
+\lstset{language=c,breaklines=true,tabsize=3,basicstyle=\footnotesize,float=tbph,frame=single,keywordstyle=\color{blue},commentstyle=\color{dkgreen}}
+\hypersetup{colorlinks=true,urlcolor=blue,linkcolor=black}
+\setlength{\parskip}{2ex}
+\setlength{\parindent}{0pt}
+ 
+% Custom command definitions
+\newcommand{\superscript}[1]{\ensuremath{^{\textrm{#1}}}}
+\newcommand{\subscript}[1]{\ensuremath{_{\textrm{#1}}}}
+
+\begin{document}
+\title{Using the USART in AVR-GCC}
+\author{Dean Camera}
+\maketitle
+
+\cleardoublepage
+\subsection*{Preface}
+Text \copyright Dean Camera, 2012. All rights reserved.
+
+This document may be freely distributed without payment to the author, provided that it is not sold, and the original author information is retained.
+
+For more tutorials, project information, donation information and author contact information, please visit \href{http://www.fourwalledcubicle.com}{www.fourwalledcubicle.com}.
+
+\cleardoublepage
+\tableofcontents
+\cleardoublepage
+
+\chapter{Introduction}
+
+This tutorial will focus on setting up the serial USART on the AVR platform. Although other hardware AVR interfaces (eg, USI) can be configured for limited RS-232 serial transmission and reception such alternatives will not be covered.
+
+\section{What is the USART?}
+
+The vast majority of devices in the current AVR family lineup contain a USART hardware subsystem. The USART hardware allows the AVR to transmit and receive data serially to and from other devices --- such as a computer or another AVR.
+
+The USART transmission system differs to most other digital busses in that it does not utilize a separate pin for the serial clock. An agreed clock rate is preset into both devices, which is then used to sample the R\subscript{x}/T\subscript{x} lines at regular intervals. Because of this, the USART requires only three wires for bi-directional communication (R\subscript{x}, T\subscript{x} and G\subscript{ND}).
+
+\section{The RS-232 Specification}
+
+The serial USART is frequently referred to as RS-232, which is a reference to the RS-232 specification which mandates the logic levels and control signals. While the AVR's normal logic levels are about 3-5V, RS-232 communication uses a low of +3V to +25V for a digital '0', and -3V to -25V for a digital '1'.
+
+If the two USART devices are running at AVR logic levels, the T\subscript{x} and R\subscript{x} pins can be connected together directly. If the devices are using RS-232 specification voltages, a level converter circuit is needed.
+
+This tutorial will assume the user is attempting to interface with a computer RS-232 port, which uses the proper RS-232 specification logic levels.
+
+
+\chapter{Setting up the Hardware}
+
+To connect your AVR to a computer via the USART port, you will need to add a level converter to your existing circuit. The most common/popular serial level converter is the Maxim MAX232. This small and relatively inexpensive IC will convert your AVR's 5V logic levels to 10V RS-232 and vice versa.
+
+Before you can hook up your MAX232, you need to first identify which pins of your AVR are responsible for serial communication. Looking in your AVR's datasheet, you should be able to identify the two serial port pins (named as alternative pin functions T\subscript{x} and R\subscript{x}).
+
+You should wire up your MAX232 to reflect the schematic here. This will enable your AVR's USART hardware to interface with the computer's USART hardware.
+
+
+\chapter{Deciding on your AVR's system clock frequency}
+
+As mentioned above, the USART does not use an external clock. To allow the two interfaced devices to communicate together, you need to decide on a baud rate for communication. Also due to the timing-critical nature of the USART, your system's clock should be stable and of a known frequency. The AVR's system clock frequency is very important. The USART clock is derived from the system clock, and it is used to sample the R\subscript{x} line and set the T\subscript{x} line at precise intervals in order to maintain the communication.
+
+If the system clock frequency cannot be precisely divided down to a ``magic'' frequency for perfect communications, it will have a percentage error (where a byte fails to be read or written inside designated time frame). System clocks for perfect USART communications should be multiples of 1.8432MHz which when used will give a 0.00\% error.
+
+Other frequencies for the main AVR clock can be used, but as the frequency drifts from the ``perfect'' multiples of 1.8432MHz, the greater the percentage error will be (and thus the less reliable the serial communication will be). It is generally accepted that error percentages of less than \ensuremath{\pm} 2\% are acceptable.
+
+Looking in your AVR's datasheet in the USART section you should see a table of common baud rates, system clocks and error percentages. You should find a combination which suits your project's constraints and has the lowest possible error percentage.
+
+I will be basing the rest of this tutorial on an example setup; an ATMEGA16 running at 7.3728MHz and a baud rate of 9600bps (bits per second). This combination, because it uses a system clock which is a multiple of the magic 1.8432MHz, has an error percentage of 0.00\%.
+
+
+\chapter{Initializing the USART}
+
+Now you should have selected a baud rate, system clock and have your AVR set up with a RS-232 level converter --- you're all set to go! All you need is the firmware to drive it.
+
+First off, you need to enable both the USART's transmission and reception circuitry. For the ATMEGA16, these are bits named \texttt{RXEN} and \texttt{TXEN}, and they are located in the control register \texttt{UCSRB}. When set, these two bits turn on the serial buffers to allow for serial communications:
+
+\begin{center}
+\begin{lstlisting}
+#include <avr/io.h>
+
+int main (void)
+{
+   UCSRB |= (1 << RXEN) | (1 << TXEN); // Turn on the transmission and reception circuitry
+}
+\end{lstlisting}
+\end{center}
+
+Next, we need to tell the AVR what type of serial format we're using. The USART can receive bytes of various sizes (from 5 to 9 bits) but for simplicity's sake we'll use the standard 8-bits (normal byte size for the AVR). Looking again at the ATMEGA16 datasheet, we can see that the bits responsible for the serial format are named \texttt{UCSZ0} to \texttt{UCSZ2}, and are located in the USART control register named \texttt{UCSRC}.
+
+The datasheet very handily gives us a table showing which bits to set for each format. The standard 8-bit format is chosen by setting the \texttt{UCSZ0} and \texttt{UCSZ1} bits. Before we write to the \texttt{UCSRC} register however, note a curious peculiarity in our chosen ATMEGA16 AVR. To reduce the number of uniquely addressable registers in the I/O space, the AVR's \texttt{UCSRC} and \texttt{UBRRH} registers --- the latter being explained later in this text) --- both share the same physical address. To select between the two, you must also write the \texttt{URSEL} bit when writing to \texttt{UCSRC}. This isn't the case on all AVR models, so check your device's datasheet.
+
+Let's look at how our code looks right now.
+
+\begin{center}
+\begin{lstlisting}
+#include <avr/io.h>
+
+int main (void)
+{
+   UCSRB |= (1 << RXEN) | (1 << TXEN);   // Turn on the transmission and reception circuitry
+   UCSRC |= (1 << URSEL) | (1 << UCSZ0) | (1 << UCSZ1); // Use 8-bit character sizes - URSEL bit set to select the UCRSC register
+}
+\end{lstlisting}
+\end{center}
+
+There, we're almost done setting up the USART already! The last thing to set for basic serial communications is the baud rate register. This register sets the clock divider for the USART which is used as a timebase to sample the incoming data at the correct frequency. It also gives the timebase for sending data, so it's vital for RS-232 serial communications.
+
+The baud rate register is 16-bit, split into two 8-bit registers as is the case with all 16-bit registers in the AVR device family. To set our baud rate prescaler value, we first need to determine it. Note that the baud rate register value is \textbf{not} the same as the baud rate you wish to use --- this is a common point of failure amongst those new to the serial peripheral. Instead, the value must be derived from the following formula:
+
+\begin{displaymath}
+    \text{BaudValue} = (((\text{F\subscript{cpu}} / (\text{USART\_BAUDRATE} * 16))) - 1)
+\end{displaymath}
+
+Where \emph{F\subscript{cpu}} is your AVR's system clock frequency (in Hz), and \emph{USART\_BAUDRATE} is the desired communication baud rate.
+
+Given my example project using a system clock of 7372800Hz and a baud rate of 9600, our formula gives:
+
+\begin{displaymath}
+\begin{array}{rcl}
+    \text{BaudValue} & = & (((\text{F\subscript{cpu}} / (\text{USART\_BAUDRATE} * 16))) - 1) \\
+    \text{BaudValue} & = & (7372800 / (9600 * 16) - 1) \\
+    \text{BaudValue} & = & (7372800 / 153600 - 1) \\
+    \text{BaudValue} & = & (48 - 1) \\
+    \text{BaudValue} & = & 47 \\
+\end{array}
+\end{displaymath}
+
+To make our life easier, we can turn this formula into a set of handy macros. The system clock frequency \emph{F\subscript{cpu}} is usually defined as a macro called \texttt{F\_CPU} in AVR-GCC via your makefile, so all that is needed is the baud rate:
+
+\begin{center}
+\begin{lstlisting}
+#define USART_BAUDRATE 9600
+#define BAUD_PRESCALE (((F_CPU / (USART_BAUDRATE * 16UL))) - 1)
+\end{lstlisting}
+\end{center}
+
+This avoids ``magic numbers'' (unexplained constants) in our source code, and makes changing the baud rate later on very easy --- just change the \texttt{BAUD\_RATE} macro value and recompile your code. Now, we need to load this into the baud rate registers, named \texttt{UBRRH} (for the high byte) and \texttt{UBRRL} (for the low byte). This is simple via a simple bitshift to grab the upper eight bits of the \texttt{BAUD\_PRESCALE} constant:
+
+\begin{center}
+\begin{lstlisting}
+UBRRH = (BAUD_PRESCALE >> 8); // Load upper 8-bits of the baud rate value into the high byte of the UBRR register
+UBRRL = BAUD_PRESCALE; // Load lower 8-bits of the baud rate value into the low byte of the UBRR register
+\end{lstlisting}
+\end{center}
+
+Now we're ready to rock and roll!
+
+
+\chapter{Sending and receiving data}
+
+Once initialized, we're ready to send and receive data. We do this by the special register named \texttt{UDR} --- short for ``\textbf{U}SART I/O \textbf{D}ata \textbf{R}egister''. This is special for two reasons; one, it behaves differently when it is read or written to, and two, it is double buffered in hardware.
+
+By assigning a byte to the \texttt{UDR} register, that byte is sent out via the AVR's T\subscript{x} line. This process is automatic --- just assign a value and wait for the transmission to complete. We can tell when the transmission is complete by looking at the transmission completion flag inside the USART control registers.
+
+On the ATMEGA16, the USART \emph{Transmission Complete} flag is located in the control register \texttt{UCSRA}, and it is named \texttt{TXC}. Using this information we can construct a simple wait loop which will prevent data from being written to the \texttt{UDR} register until the current transmission is complete:
+
+\begin{center}
+\begin{lstlisting}
+UDR = ByteToSend; // Send out the byte value in the variable "ByteToSend"
+while ((UCSRA & (1 << TXC)) == 0) {}; // Do nothing until transmission complete flag set
+\end{lstlisting}
+\end{center}
+
+However, note that this approach is non-optimal. We spend time waiting after each byte which could be better spent performing other tasks, when it is far better to check before a transmission to see if the \texttt{UDR} register is ready for data. We can do this by checking the USART \emph{Data Register Empty} flag called \texttt{UDRE} instead, also located in the \texttt{UCSRA} control register of the ATMEGA16:
+
+\begin{center}
+\begin{lstlisting}
+while ((UCSRA & (1 << UDRE)) == 0) {}; // Do nothing until UDR is ready for more data to be written to it
+UDR = ByteToSend; // Send out the byte value in the variable "ByteToSend"
+\end{lstlisting}
+\end{center}
+
+This is much better, as now time is only wasted before a transmission if the \texttt{UDR} register is full. After a transmission we can immediately continue program execution while the hardware sends out the byte stored in \texttt{UDR}, saving time.
+
+
+Now we can move on to receiving data. As mentioned before, the \texttt{UDR} register behaves differently between read and write operations. If data is written to it it is sent out via the AVR's T\subscript{x} pin, however when data is received by the R\subscript{x} pin of the AVR, it may be read out of the \texttt{UDR} register. Before reading the \texttt{UDR} register however, we need to check to see if we have received a byte.
+
+To do this, we can check the USART \emph{Receive Complete} flag \texttt{RXC} to see if it is set. Again, this is located in the \texttt{UCSRA} control register of the ATMEGA16:
+
+\begin{center}
+\begin{lstlisting}
+while ((UCSRA & (1 << RXC)) == 0) {}; // Do nothing until data have been received and is ready to be read from UDR
+ReceivedByte = UDR; // Fetch the received byte value into the variable "ReceivedByte"
+\end{lstlisting}
+\end{center}
+
+\chapter{Putting it all together}
+
+Right! Now it's time to put everything together! Let's make a simple program that echoes the received characters back to the computer. First, the basic program structure:
+
+\begin{center}
+\begin{lstlisting}
+#include <avr/io.h>
+
+int main (void)
+{
+
+}
+\end{lstlisting}
+\end{center}
+
+Next, our USART initializing sequence:
+
+\begin{center}
+\begin{lstlisting}
+#include <avr/io.h>
+
+#define USART_BAUDRATE 9600
+#define BAUD_PRESCALE (((F_CPU / (USART_BAUDRATE * 16UL))) - 1)
+
+int main (void)
+{
+   UCSRB |= (1 << RXEN) | (1 << TXEN);   // Turn on the transmission and reception circuitry
+   UCSRC |= (1 << URSEL) | (1 << UCSZ0) | (1 << UCSZ1); // Use 8-bit character sizes
+
+   UBRRH = (BAUD_PRESCALE >> 8); // Load upper 8-bits of the baud rate value into the high byte of the UBRR register
+   UBRRL = BAUD_PRESCALE; // Load lower 8-bits of the baud rate value into the low byte of the UBRR register
+}
+\end{lstlisting}
+\end{center}
+
+Now, an infinite loop to contain our echo code:
+
+\begin{center}
+\begin{lstlisting}
+#include <avr/io.h>
+
+#define USART_BAUDRATE 9600
+#define BAUD_PRESCALE (((F_CPU / (USART_BAUDRATE * 16UL))) - 1)
+
+int main (void)
+{
+   UCSRB |= (1 << RXEN) | (1 << TXEN);   // Turn on the transmission and reception circuitry
+   UCSRC |= (1 << URSEL) | (1 << UCSZ0) | (1 << UCSZ1); // Use 8-bit character sizes
+
+   UBRRH = (BAUD_PRESCALE >> 8); // Load upper 8-bits of the baud rate value into the high byte of the UBRR register
+   UBRRL = BAUD_PRESCALE; // Load lower 8-bits of the baud rate value into the low byte of the UBRR register
+
+   for (;;) // Loop forever
+   {
+
+   }
+}
+\end{lstlisting}
+\end{center}
+
+And some echo code to complete our example. We'll add in a local variable called \texttt{ReceivedByte}, which will always hold the last received character from the computer:
+
+\begin{center}
+\begin{lstlisting}
+#include <avr/io.h>
+
+#define USART_BAUDRATE 9600
+#define BAUD_PRESCALE (((F_CPU / (USART_BAUDRATE * 16UL))) - 1)
+
+int main (void)
+{
+   char ReceivedByte;
+
+   UCSRB |= (1 << RXEN) | (1 << TXEN);   // Turn on the transmission and reception circuitry
+   UCSRC |= (1 << URSEL) | (1 << UCSZ0) | (1 << UCSZ1); // Use 8-bit character sizes
+
+   UBRRH = (BAUD_PRESCALE >> 8); // Load upper 8-bits of the baud rate value into the high byte of the UBRR register
+   UBRRL = BAUD_PRESCALE; // Load lower 8-bits of the baud rate value into the low byte of the UBRR register
+
+   for (;;) // Loop forever
+   {
+      while ((UCSRA & (1 << RXC)) == 0) {}; // Do nothing until data have been received and is ready to be read from UDR
+      ReceivedByte = UDR; // Fetch the received byte value into the variable "ByteReceived"
+
+      while ((UCSRA & (1 << UDRE)) == 0) {}; // Do nothing until UDR is ready for more data to be written to it
+      UDR = ReceivedByte; // Echo back the received byte back to the computer
+   }   
+}
+\end{lstlisting}
+\end{center}
+
+And voila, we have a working serial example! Connect to this project via a serial terminal on your computer, using 8-bit, no parity 9600 baud communication settings and it will echo back anything you send to it.
+
+
+\chapter{Potential Pitfalls}
+
+There are several ``gotchas'' when dealing with the USART. First, make sure your AVR is running of a reliable, known clock source with a low error percentage at your chosen baud rate. New AVRs default to their internal oscillators until their fuses are changed. The internal RC oscillator is of too low a tolerance for use with the USART without external calibration.
+
+Check your datasheet to check for the locations of the different flags. Different AVRs have the control flags located in different control registers (\texttt{UCSRA}, \texttt{UCSRB} and \texttt{UCSRC}).
+
+Make sure your computer terminal is connected at the exact settings your AVR application is designed for. Different settings will cause corrupt data.
+
+Cross your R\subscript{x} and T\subscript{x} wires. Your PC's R\subscript{x} line should be connected to your AVR's T\subscript{x} line and vice-versa. This is because the R\subscript{x}/T\subscript{x} lines are labeled relative to the device they are marked on.
+
+Some AVRs do not have the \texttt{URSEL} bit to differentiate between the \texttt{UCSRC} and \texttt{UBRRH} registers --- check your datasheet.
+
+
+\chapter{Advanced serial communication}
+
+A more advanced method of serial communication involves the use of the USART interrupts and is covered in another of my AVR tutorials.
+
+\end{document}

@@ -8,6 +8,7 @@
 \usepackage{hyperref}
 \usepackage{color}
 \usepackage{xcolor}
+\usepackage{textcomp}
 
 % Package and environment configuration
 \definecolor{dkgreen}{rgb}{0,0.6,0}
@@ -25,17 +26,12 @@
 \author{Dean Camera}
 \maketitle
 
-\cleardoublepage
-\subsection*{Preface}
-Text \copyright Dean Camera, 2012. All rights reserved.
-
-This document may be freely distributed without payment to the author, provided that it is not sold, and the original author information is retained.
-
-For more tutorials, project information, donation information and author contact information, please visit \href{http://www.fourwalledcubicle.com}{www.fourwalledcubicle.com}.
+\input{../Preface.tex}
 
 \cleardoublepage
 \tableofcontents
 \cleardoublepage
+
 
 There comes a time when a project has outgrown the scope of a single file. Perhaps it's the point at with you need to add more RAM to your computer just to open your project, or when you realize you've just spent 45 minutes tracking down the timeout function you swore you wrote two weeks ago. Whatever the reason, it's time to split your project up into several manageable files, which you can then keep better track of. This tutorial will give several pointers about the intricacies of how to accomplish such a task.
 

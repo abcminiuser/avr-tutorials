@@ -1,3 +1,4 @@
+\documentclass[a4paper,oneside,notitlepage]{book}
 \input{../CommonDirectives.tex}
 
 \begin{document}
@@ -7,6 +8,7 @@
 \maketitle
 \input{../Preface.tex}
 \tableofcontents
+\cleardoublepage
 
 
 \label{chp:Intro}
@@ -42,7 +44,7 @@ In the sections dealing with toggling a LED, it is assumed to be connected to PO
 To start off, we will deal with basic timer functionality and move on from there. 
 
 \label{chp:TimersFcpu}
-\chapter{Timers running at F\subscript{cpu}}
+\chapter{Timers running at Fcpu}
 
 We'll start with a simple example. We'll create a simple program to flash a LED at about 20Hz. Simple, right?
 

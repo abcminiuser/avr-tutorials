@@ -1,5 +1,3 @@
-\documentclass[a4paper,oneside,notitlepage]{book}
-
 \usepackage{listings}
 \usepackage{amsmath}
 \usepackage{mathtools}
@@ -7,12 +5,17 @@
 \usepackage{color}
 \usepackage{xcolor}
 \usepackage{textcomp}
+\usepackage{titlesec}
+\usepackage{fullpage}
+\usepackage{float}
 
 \definecolor{dkgreen}{rgb}{0,0.6,0}
 \lstset{language=c,breaklines=true,tabsize=3,basicstyle=\scriptsize\ttfamily,float=tbpH,frame=single,keywordstyle=\color{blue},commentstyle=\color{dkgreen}}
 \hypersetup{colorlinks=true,urlcolor=blue,linkcolor=black}
 \setlength{\parskip}{2ex}
 \setlength{\parindent}{0pt}
+\titleformat{\chapter}[display]{\normalfont\huge\bfseries}{\chaptertitlename\ \thechapter}{20pt}{\Huge}
+\titlespacing*{\chapter}{0pt}{0pt}{30pt}
  
 \newcommand{\superscript}[1]{\ensuremath{^{\textrm{#1}}}}
 \newcommand{\subscript}[1]{\ensuremath{_{\textrm{#1}}}}

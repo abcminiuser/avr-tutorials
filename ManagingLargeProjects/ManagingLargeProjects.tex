@@ -1,37 +1,12 @@
-% Set up the document
-\documentclass[a4paper,oneside,notitlepage]{book}
-
-% Include any extra LaTeX packages required
-\usepackage{listings}
-\usepackage{amsmath}
-\usepackage{mathtools}
-\usepackage{hyperref}
-\usepackage{color}
-\usepackage{xcolor}
-\usepackage{textcomp}
-\usepackage{fullpage}
-
-% Package and environment configuration
-\definecolor{dkgreen}{rgb}{0,0.6,0}
-\lstset{language=c,breaklines=true,tabsize=3,basicstyle=\footnotesize,float=tbph,frame=single,keywordstyle=\color{blue},commentstyle=\color{dkgreen}}
-\hypersetup{colorlinks=true,urlcolor=blue,linkcolor=black}
-\setlength{\parskip}{2ex}
-\setlength{\parindent}{0pt}
- 
-% Custom command definitions
-\newcommand{\superscript}[1]{\ensuremath{^{\textrm{#1}}}}
-\newcommand{\subscript}[1]{\ensuremath{_{\textrm{#1}}}}
+\input{../CommonDirectives.tex}
 
 \begin{document}
 \title{Modularizing C Code: Managing large projects}
 \author{Dean Camera}
+
 \maketitle
-
 \input{../Preface.tex}
-
-\cleardoublepage
 \tableofcontents
-\cleardoublepage
 
 
 There comes a time when a project has outgrown the scope of a single file. Perhaps it's the point at with you need to add more RAM to your computer just to open your project, or when you realize you've just spent 45 minutes tracking down the timeout function you swore you wrote two weeks ago. Whatever the reason, it's time to split your project up into several manageable files, which you can then keep better track of. This tutorial will give several pointers about the intricacies of how to accomplish such a task.

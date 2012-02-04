@@ -145,7 +145,7 @@ That should be enough to make the AVR's execution jump to the appropriate ISR wh
 
 There are a few things to keep in mind when using interrupts in your program:
 
-\section{When an interrupt is executing, your main program isn't.}
+\section{When an interrupt is executing, your main program isn't}
 That means that if your application isn't robust and your receive many interrupts in a very short space of time, your main program's execution will slow to a halt. Keep this in mind when you decided to attach a 4MHz clock input to an external interrupt pin.
 
 \section{Data shared between the ISR and your main program must be both volatile and global in scope in the C language}
@@ -175,7 +175,7 @@ int main(void)
 
 There is a good chance the program will freeze forever in the while loop, as (according to the optimizer) the "MyValue" global's value never changes in the loop. By making the global variable volatile, you are declaring to the compiler that the value may change due to circumstances it is not aware of, forcing it to generate code to reload the value each time.
 
-\section{Pay attention to variables needing atomic access.}
+\section{Pay attention to variables needing atomic access}
 There's another subtle bug in the above code sample; it's possible at the machine code level for an interrupt to occur half way between the fetching of the two bytes of the integer variable MyValue, causing corruption if the variable's value is altered inside the ISR. This can be avoided by making the fetching of the variable's value in the main program code "atomic", by disabling the global interrupt enable bit while the fetching is taking place. In avr-libc this can be done in the following manner:
 
 \begin{center}
@@ -211,10 +211,10 @@ int main(void)
 
 Your compiler may vary.
 
-\section{Each interrupt source has exactly one flag to indicate that the event occurred.}
+\section{Each interrupt source has exactly one flag to indicate that the event occurred}
 If two or more of the same interrupt event occurs while you are in the middle of processing an ISR, you will only receive one ISR call for the event when the current ISR terminates, and the remaining interrupt events will be lost.
 
-\section{The interrupt source flag is usually cleared when the ISR fires.}
+\section{The interrupt source flag is usually cleared when the ISR fires}
 This isn't always the case (some interrupt flags are cleared when a particular register is read, such as the USART receive complete flag) however this is more of an exception to the rule. The upshot of this is that if you receive another interrupt to the source you are currently processing while in its ISR, you'll get another call to the ISR once the current one terminates. Again, you are still limited to a single "event occurred" flag for each interrupt, so you can miss interrupts if many happen at once before you have a chance to process them.
 
 

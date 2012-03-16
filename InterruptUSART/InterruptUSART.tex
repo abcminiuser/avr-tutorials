@@ -262,7 +262,7 @@ int main (void)
    UBRRH = (BAUD_PRESCALE >> 8); // Load upper 8-bits of the baud rate value into the high byte of the UBRR register
    UBRRL = BAUD_PRESCALE; // Load lower 8-bits of the baud rate value into the low byte of the UBRR register
 
-   UCSRB |= (1 << RCXIE); // Enable the USART Recieve Complete interrupt (USART_RXC)
+   UCSRB |= (1 << RXCIE); // Enable the USART Recieve Complete interrupt (USART_RXC)
    sei(); // Enable the Global Interrupt Enable flag so that interrupts can be processed
 
    for (;;) // Loop forever

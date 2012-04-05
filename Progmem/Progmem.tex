@@ -297,7 +297,7 @@ void main (void)
 \end{lstlisting}
 \end{center}
 
-Almost there! GCC will probably give you warnings with code like this, but will most likely generate the correct code. The problem is the typecast; \lstinline{pgm_read_word()| is returning a word-sized value while \lstinline{USART_TxString_P()} is expecting (if you look back at the parameters for the function in part I) a \lstinline{char*} pointer type. While the sizes of the two data types are the same (remember, the pointer is 16-bits!) to the compiler it looks like we are trying to do the code equivalent of shoving a square peg in a round hole.
+Almost there! GCC will probably give you warnings with code like this, but will most likely generate the correct code. The problem is the typecast; \lstinline{pgm_read_word()} is returning a word-sized value while \lstinline{USART_TxString_P()} is expecting (if you look back at the parameters for the function in part I) a \lstinline{char*} pointer type. While the sizes of the two data types are the same (remember, the pointer is 16-bits!) to the compiler it looks like we are trying to do the code equivalent of shoving a square peg in a round hole.
 
 To instruct the compiler that we really do want to use that 16-bit return value of \lstinline{pgm_read_word()} as a pointer to a const char in flash memory, we need to typecast it to a pointer in the form of \lstinline{char*}. Our final program will now look like this:
 

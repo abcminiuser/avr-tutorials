@@ -34,7 +34,7 @@ This tutorial will focus specifically on the AVR-GCC compiler; other compilers m
 
 The \textit{avr-libc} library, included with WinAVR and (more recently) the Atmel AVR Toolchain, contains prebuilt library routines for EEPROM access and manipulation to simplify its use in user applications. Before we can make use of those routines, we need to include the EEPROM library header \lstinline{<avr/eeprom.h>} with the preprocessor directive \lstinline{#include <avr/eeprom.h>}.
 
-Once added to your application, you now have access to the EEPROM memory, via the routines now provided by the \lstinline{<avr/eeprom.h>} module of avr-libc. There are three main types of EEPROM access: byte, word and block. Each type has three types of functions; a write, an update, and a read variant. The names of the routines exposed by our new headers are:
+Once added to your application, you now have access to the EEPROM memory, via the routines now provided by the \lstinline{<avr/eeprom.h>} module of avr-libc. There are five main types of EEPROM access: byte, word, dword, float and block. Each type has three types of functions; a write, an update, and a read variant. The names of the routines exposed by our new headers are:
 
 \begin{center}
 \begin{lstlisting}
@@ -50,13 +50,17 @@ uint16_t eeprom_read_dword (const uint32_t *addr)
 void eeprom_write_dword (uint32_t *addr, uint32_t value)
 void eeprom_update_dword (uint32_t *addr, uint32_t value)
 
+uint16_t eeprom_read_float (const float *addr)
+void eeprom_write_float (float *addr, float value)
+void eeprom_update_float (float *addr, float value)
+
 void eeprom_read_block (void *pointer_ram, const void *pointer_eeprom, size_t n)
 void eeprom_write_block (void *pointer_ram, const void *pointer_eeprom, size_t n)
 void eeprom_update_block (void *pointer_ram, const void *pointer_eeprom, size_t n)
 \end{lstlisting}
 \end{center}
 
-In AVR-GCC, a word is two bytes long and a double word is twice that (4-bytes), while a block is an arbitrary number of bytes which you supply (think string buffers, or customer data types you create).
+In AVR-GCC, a word is two bytes long and a double word is twice that (4-bytes), while a block is an arbitrary number of bytes which you supply (think string buffers, or customer data types you create) and a float is also four bytes long (but can hold fractional values).
 
 \section{The update vs. write functions}
 
@@ -105,7 +109,7 @@ void main(void)
 \end{lstlisting}
 \end{center}
 
-And double words can be read using the appropriate \lstinline{eeprom_read_dword()} function and a pointer to a \lstinline{uint32_t} variable.
+And double words and floats can be read using the \lstinline{eeprom_read_dword()} and \lstinline{eeprom_read_float()} functions and a pointer to a \lstinline{uint32_t} or \lstinline{float} variable.
 
 \chapter{Writing data to the EEPROM}
 
@@ -143,7 +147,7 @@ void main(void)
 \end{lstlisting}
 \end{center}
 
-And double words can be written using the \lstinline{eeprom_update_dword()} function and a \lstinline{uint32_t} variable.
+And double words and floats can be written using the \lstinline{eeprom_update_dword()} and \lstinline{eeprom_update_float()} functions and a \lstinline{uint32_t} or \lstinline{float} variable.
 
 
 \chapter{EEPROM Block Access}
@@ -217,7 +221,7 @@ void main(void)
 {
     uint8_t StringOfData[10] = "TEST";
 
-    eeprom_update_block((void*)&StringOfData, (const void*)12, 10);
+    eeprom_update_block((const void*)&StringOfData, (void*)12, 10);
 }
 \end{lstlisting}
 \end{center}

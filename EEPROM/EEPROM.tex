@@ -47,8 +47,8 @@ void eeprom_write_word (uint16_t *addr, uint16_t value)
 void eeprom_update_word (uint16_t *addr, uint16_t value)
 
 uint16_t eeprom_read_dword (const uint32_t *addr)
-void eeprom_write_dword (uint16_t *addr, uint32_t value)
-void eeprom_update_dword (uint16_t *addr, uint32_t value)
+void eeprom_write_dword (uint32_t *addr, uint32_t value)
+void eeprom_update_dword (uint32_t *addr, uint32_t value)
 
 void eeprom_read_block (void *pointer_ram, const void *pointer_eeprom, size_t n)
 void eeprom_write_block (void *pointer_ram, const void *pointer_eeprom, size_t n)

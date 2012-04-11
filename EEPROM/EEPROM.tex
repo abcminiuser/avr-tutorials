@@ -46,13 +46,17 @@ uint16_t eeprom_read_word (const uint16_t *addr)
 void eeprom_write_word (uint16_t *addr, uint16_t value)
 void eeprom_update_word (uint16_t *addr, uint16_t value)
 
+uint16_t eeprom_read_dword (const uint32_t *addr)
+void eeprom_write_dword (uint16_t *addr, uint32_t value)
+void eeprom_update_dword (uint16_t *addr, uint32_t value)
+
 void eeprom_read_block (void *pointer_ram, const void *pointer_eeprom, size_t n)
 void eeprom_write_block (void *pointer_ram, const void *pointer_eeprom, size_t n)
 void eeprom_update_block (void *pointer_ram, const void *pointer_eeprom, size_t n)
 \end{lstlisting}
 \end{center}
 
-In AVR-GCC, a word is two bytes long, while a block is an arbitrary number of bytes which you supply (think string buffers, or customer data types you create).
+In AVR-GCC, a word is two bytes long and a double word is twice that (4-bytes), while a block is an arbitrary number of bytes which you supply (think string buffers, or customer data types you create).
 
 \section{The update vs. write functions}
 
@@ -101,6 +105,7 @@ void main(void)
 \end{lstlisting}
 \end{center}
 
+And double words can be read using the appropriate \lstinline{eeprom_read_dword()} function and a pointer to a \lstinline{uint32_t} variable.
 
 \chapter{Writing data to the EEPROM}
 
@@ -137,6 +142,8 @@ void main(void)
 }
 \end{lstlisting}
 \end{center}
+
+And double words can be written using the \lstinline{eeprom_update_dword()} function and a \lstinline{uint32_t} variable.
 
 
 \chapter{EEPROM Block Access}

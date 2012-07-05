@@ -53,7 +53,7 @@ char FlashString[] PROGMEM = "This is a string held completely in flash memory."
 \end{lstlisting}
 \end{center}
 
-In older AVR-GCC versions, variables tagged with the \lstinline{PROGMEM} attribute don't have to also be marked as \lstinline{const}, however this is changing in newer releases. To prevent compile time warnings, we add this to the variable's declaration:
+In older AVR-GCC versions, variables tagged with the \lstinline{PROGMEM} attribute don't have to also explicitly be marked as \lstinline{const}, however this is changing in newer releases. To prevent compile time warnings, we add this to the variable's declaration:
 
 \begin{center}
 \begin{lstlisting}
@@ -61,7 +61,7 @@ const char FlashString[] PROGMEM = "This is a string held completely in flash me
 \end{lstlisting}
 \end{center}
 
-Now that the \lstinline{PROGMEM} string has a const" modifier, we cannot try to modify it in our code. The pgmspace.h header also exposes a neat little macro, \lstinline{PSTR()}, which by some GCC magic allows you to create inline strings:
+Now that the \lstinline{PROGMEM} string has a \lstinline{const} modifier, we cannot try to modify it in our code. The \lstinline{pgmspace.h} header also exposes a neat little macro, \lstinline{PSTR()}, which by some GCC magic allows you to create inline strings:
 
 \begin{center}
 \begin{lstlisting}
@@ -225,7 +225,7 @@ const char MenuItem1[] PROGMEM = "Menu Item 1";
 const char MenuItem2[] PROGMEM = "Menu Item 2";
 const char MenuItem3[] PROGMEM = "Menu Item 3";
 
-char* MenuItemPointers[] = {MenuItem1, MenuItem2, MenuItem3};
+const char* MenuItemPointers[] = {MenuItem1, MenuItem2, MenuItem3};
 
 void main (void)
 {
@@ -252,7 +252,7 @@ const char MenuItem1[] PROGMEM = "Menu Item 1";
 const char MenuItem2[] PROGMEM = "Menu Item 2";
 const char MenuItem3[] PROGMEM = "Menu Item 3";
 
-char* MenuItemPointers[] PROGMEM = {MenuItem1, MenuItem2, MenuItem3};
+const char* MenuItemPointers[] PROGMEM = {MenuItem1, MenuItem2, MenuItem3};
 
 void main (void)
 {
@@ -283,7 +283,7 @@ const char MenuItem1[] PROGMEM = "Menu Item 1";
 const char MenuItem2[] PROGMEM = "Menu Item 2";
 const char MenuItem3[] PROGMEM = "Menu Item 3";
 
-char* MenuItemPointers[] PROGMEM = {MenuItem1, MenuItem2, MenuItem3};
+const char* MenuItemPointers[] PROGMEM = {MenuItem1, MenuItem2, MenuItem3};
 
 void main (void)
 {
@@ -310,7 +310,7 @@ const char MenuItem1[] PROGMEM = "Menu Item 1";
 const char MenuItem2[] PROGMEM = "Menu Item 2";
 const char MenuItem3[] PROGMEM = "Menu Item 3";
 
-char* MenuItemPointers[] PROGMEM = {MenuItem1, MenuItem2, MenuItem3};
+const char* MenuItemPointers[] PROGMEM = {MenuItem1, MenuItem2, MenuItem3};
 
 void main (void)
 {

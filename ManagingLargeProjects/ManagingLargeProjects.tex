@@ -170,7 +170,7 @@ Identify which of your functions are module-internal, and add in the static keyw
 
 \begin{center}
 \begin{lstlisting}
-void USARTSetup(void)
+void USARTSetup(void);
 \end{lstlisting}
 \end{center}
 
@@ -178,11 +178,11 @@ We'll make the function static to reduce its scope to inside \texttt{USART.c}:
 
 \begin{center}
 \begin{lstlisting}
-static void USARTEnable(void)
+static void USARTEnable(void);
 \end{lstlisting}
 \end{center}
 
-Note that the static keyword should be added to both the prototype in the header file, as well as to the function in the C source file.
+Note that the static keyword should be added to both the prototype, as well as to the function in the C source file. However, there's now an additional important step: we need to move the (now) static function prototype out of our header file and back into the C source file. This seems counter-intutive at first; after all, header files are supposed to contain function prototypes. The reason is due to the limited scope of static functions; since they can only be called from the C source file where they are defined, there's no need to have a global prototype in the header files that other C source files could potentially include. In fact, if you \textit{do} leave the static function prototype in the header file, you will recieve compiler warnings about undefined functions if the static function prototype is visible to other C source files.
 
 \section{Global variables}
 
@@ -202,10 +202,10 @@ Let's assume our above example has the following original header file:
 
 \begin{center}
 \begin{lstlisting}
-#define StatusLedRed     (1 << 3)
-#define StatusLedGreen     (1 << 2)
-#define ADCTempSensChannel 5
-#define BitMask(x) (1 << x)
+#define StatusLedRed         (1 << 3)
+#define StatusLedGreen       (1 << 2)
+#define ADCTempSenseChannel  5
+#define BitMask(x)           (1 << x)
 
 typedef unsigned char USARTByte;
 
@@ -231,28 +231,28 @@ USART.h
 \begin{lstlisting}
 typedef unsigned char USARTByte;
 
-void        USARTSetup(void)
-static void USARTEnable(void)
-USARTByte   USARTGetByte(void)
-void        USARTProcessByte(USARTByte)
+void        USARTSetup(void);
+static void USARTEnable(void);
+USARTByte   USARTGetByte(void);
+void        USARTProcessByte(USARTByte);
 \end{lstlisting}
 \end{center}
 
 Speaker.h
 \begin{center}
 \begin{lstlisting}
-void SpeakerSetup(void)
-void SpeakerBeep(void)
+void SpeakerSetup(void);
+void SpeakerBeep(void);
 \end{lstlisting}
 \end{center}
 
 ADC.h
 \begin{center}
 \begin{lstlisting}
-#define ADCTempSensChannel 5
+#define ADCTempSenseChannel 5
 
-int ADCCheckChanel(char)
-int ADCCheckTempSensorVal(void)
+int ADCCheckChanel(char);
+int ADCCheckTempSensorVal(void);
 \end{lstlisting}
 \end{center}
 
@@ -260,12 +260,12 @@ Main.h
 \begin{center}
 \begin{lstlisting}
 #define StatusLedRed     (1 << 3)
-#define StatusLedGreen     (1 << 2)
+#define StatusLedGreen   (1 << 2)
 
-int main(void)
-void MainSleepMode(void)
-void MainTurnOnStatusLed(void)
-void MainTurnOffStatusLed(void)
+int main(void);
+void MainSleepMode(void);
+void MainTurnOnStatusLed(void);
+void MainTurnOffStatusLed(void);
 \end{lstlisting}
 \end{center}
 
@@ -396,10 +396,10 @@ USART.h
 
 typedef unsigned char USARTByte;
 
-void        USARTSetup(void)
-static void USARTEnable(void)
-USARTByte   USARTGetByte(void)
-void        USARTProcessByte(USARTByte)
+void        USARTSetup(void);
+static void USARTEnable(void);
+USARTByte   USARTGetByte(void);
+void        USARTProcessByte(USARTByte);
 
 extern unsigned char LastCommand;
 
@@ -413,8 +413,8 @@ Speaker.h
 #ifndef SPEAKER_H
 #define SPEAKER_H
 
-void SpeakerSetup(void)
-void SpeakerBeep(void)
+void SpeakerSetup(void);
+void SpeakerBeep(void);
 
 #endif
 \end{lstlisting}
@@ -428,8 +428,8 @@ ADC.h
 
 #define ADC_TEMPSENSORCHANNEL 5
 
-int ADCCheckChanel(char)
-int ADCCheckTempSensorVal(void)
+int ADCCheckChanel(char);
+int ADCCheckTempSensorVal(void);
 
 #endif
 \end{lstlisting}
@@ -444,10 +444,10 @@ Main.h
 #define MAIN_STATLED_RED     (1 << 3)
 #define MAIN_STATLED_GREEN   (1 << 2)
 
-int  main(void)
-void MainSleepMode(void)
-void MainTurnOnStatusLed(void)
-void MainTurnOffStatusLed(void)
+int  main(void);
+void MainSleepMode(void);
+void MainTurnOnStatusLed(void);
+void MainTurnOffStatusLed(void);
 
 #endif
 \end{lstlisting}

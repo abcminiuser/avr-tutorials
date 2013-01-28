@@ -22,7 +22,7 @@ Let's say we are at home, writing an excellent tutorial on how a principle of mo
 
 This is how a processor interrupt works. We can set up the processor so that it is looking for a specific external event (like a pin going low, or a timer overflowing) to become true, while it goes on and performs other tasks. When these events occur, we stop the current task, handle the event, and resume back where we left off. This gives us a great deal of flexibility; rather than having to actively poll our events to see if they have happened, we can instead just ignore them completely and trust our interrupt routines to process them instead.
 
-What we are doing is called asynchronous processing - that is, we are processing the interrupt events outside the regular "execution thread" of the main program. It's important to note that we are not doing two things at once (although it may appear that way) - the regular program is stopped while an interrupt routine runs.
+What we are doing is called asynchronous processing - that is, we are processing the interrupt events outside the regular ``execution thread'' of the main program. It's important to note that we are not doing two things at once (although it may appear that way) - the regular program is stopped while an interrupt routine runs.
 
 When correctly set up, we can link a specific interrupt source to a specific handler routine, called an \textit{Interrupt Service Routine}, or \textit{ISR} for short.
 
@@ -39,7 +39,7 @@ There are two main sources of interrupts:
 
 The 8-bit AVRs lack software interrupts, which are usually used for special operating system tasks like switching between user and kernel space, or for handling exceptions. Because of this, we'll only be looking at hardware interrupts.
 
-Each AVR model contains a different set of interrupt sources. We can find out which interrupts our chosen model has by looking in the "Interrupts" chapter of the AVR's datasheet. This chapter contains a table, similar to the following fragment from the AT90USB1287 datasheet: 
+Each AVR model contains a different set of interrupt sources. We can find out which interrupts our chosen model has by looking in the ``Interrupts'' chapter of the AVR's datasheet. This chapter contains a table, similar to the following fragment from the AT90USB1287 datasheet: 
 
 \begin{center}
 \begin{tabular}{|l|l|l|l|}
@@ -61,7 +61,7 @@ Hardware interrupts can be useful to process sparingly occurring events, such as
 \label{chp:DefISR}
 \chapter{So how to we define an ISR?}
 
-How we do interrupts varies between programming languages, but at the lowest level, we are simply making a general AVR function somewhere in the AVR's FLASH memory space, and "linking" it to a specific interrupt source by placing a JMP or RJMP instruction to this function at the address specified in the table we just looked at. At the start of the AVR's FLASH memory space lies the Interrupt Vector Table, which is simply a set of hardwired addresses which the AVR's processor will jump to when each of the interrupts fire. By placing a jump instruction at each interrupt's address in the table, we can make the AVR processor jump to our ISR which lies elsewhere.
+How we do interrupts varies between programming languages, but at the lowest level, we are simply making a general AVR function somewhere in the AVR's FLASH memory space, and ``linking'' it to a specific interrupt source by placing a JMP or RJMP instruction to this function at the address specified in the table we just looked at. At the start of the AVR's FLASH memory space lies the Interrupt Vector Table, which is simply a set of hardwired addresses which the AVR's processor will jump to when each of the interrupts fire. By placing a jump instruction at each interrupt's address in the table, we can make the AVR processor jump to our ISR which lies elsewhere.
 
 For an ISR to be called, we need three conditions to be true: 
 
@@ -100,7 +100,7 @@ MyISRHandler:
 \end{lstlisting}
 \end{center}
 
-Note that in the case of the assembly version, we need to add a "reti" instruction at the end of our interrupt instead of the usual "ret" instruction to return to the main program's execution; this special instruction has the dual function of exiting the ISR, and automatically re-enabling the Global Interrupt Enable bit. This happens inside the C version too when the function returns, we just don't see it normally.
+Note that in the case of the assembly version, we need to add a \texttt{reti} instruction at the end of our interrupt instead of the usual \texttt{ret} instruction to return to the main program's execution; this special instruction has the dual function of exiting the ISR, and automatically re-enabling the Global Interrupt Enable bit. This happens inside the C version too when the function returns, we just don't see it normally.
 
 This raises the next point; \textbf{by default, on the AVR devices, interrupts are themselves not interruptable}. When an interrupt fires, the AVR CPU will automatically disable the Global Interrupt Enable bit, to prevent the ISR from being itself interrupted. This is to prevent stack overflows from too many interrupts occurring at once and to prevent the ISRs from running too long, as most uses of interrupts are to have minimal latency when processing an event. It's perfectly possible to set the Global Interrupt Enable bit again as part of the ISR so that nested interrupts can occur, but this is highly not recommended as it is dangerous. 
 
@@ -173,10 +173,10 @@ int main(void)
 \end{lstlisting}
 \end{center}
 
-There is a good chance the program will freeze forever in the while loop, as (according to the optimizer) the "MyValue" global's value never changes in the loop. By making the global variable volatile, you are declaring to the compiler that the value may change due to circumstances it is not aware of, forcing it to generate code to reload the value each time.
+There is a good chance the program will freeze forever in the while loop, as (according to the optimizer) the ``MyValue'' global's value never changes in the loop. By making the global variable volatile, you are declaring to the compiler that the value may change due to circumstances it is not aware of, forcing it to generate code to reload the value each time.
 
 \section{Pay attention to variables needing atomic access}
-There's another subtle bug in the above code sample; it's possible at the machine code level for an interrupt to occur half way between the fetching of the two bytes of the integer variable MyValue, causing corruption if the variable's value is altered inside the ISR. This can be avoided by making the fetching of the variable's value in the main program code "atomic", by disabling the global interrupt enable bit while the fetching is taking place. In avr-libc this can be done in the following manner:
+There's another subtle bug in the above code sample; it's possible at the machine code level for an interrupt to occur half way between the fetching of the two bytes of the integer variable MyValue, causing corruption if the variable's value is altered inside the ISR. This can be avoided by making the fetching of the variable's value in the main program code ``atomic'', by disabling the global interrupt enable bit while the fetching is taking place. In avr-libc this can be done in the following manner:
 
 \begin{center}
 \begin{lstlisting}
@@ -215,7 +215,7 @@ Your compiler may vary.
 If two or more of the same interrupt event occurs while you are in the middle of processing an ISR, you will only receive one ISR call for the event when the current ISR terminates, and the remaining interrupt events will be lost.
 
 \section{The interrupt source flag is usually cleared when the ISR fires}
-This isn't always the case (some interrupt flags are cleared when a particular register is read, such as the USART receive complete flag) however this is more of an exception to the rule. The upshot of this is that if you receive another interrupt to the source you are currently processing while in its ISR, you'll get another call to the ISR once the current one terminates. Again, you are still limited to a single "event occurred" flag for each interrupt, so you can miss interrupts if many happen at once before you have a chance to process them.
+This isn't always the case (some interrupt flags are cleared when a particular register is read, such as the USART receive complete flag) however this is more of an exception to the rule. The upshot of this is that if you receive another interrupt to the source you are currently processing while in its ISR, you'll get another call to the ISR once the current one terminates. Again, you are still limited to a single ``event occurred'' flag for each interrupt, so you can miss interrupts if many happen at once before you have a chance to process them.
 
 
 \label{chp:FinalWords}

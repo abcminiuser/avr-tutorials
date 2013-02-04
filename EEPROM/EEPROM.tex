@@ -122,7 +122,7 @@ Alright, so now we know how to read bytes and words from the EEPROM, but how do 
 void main(void)
 {
     uint8_t ByteOfData;
-	
+
     ByteOfData = 0x12;
 
     eeprom_update_byte((uint8_t*)46, ByteOfData);
@@ -139,7 +139,7 @@ Unsuprisingly, the process for writing words of data to the EEPROM follows the s
 void main(void)
 {
     uint16_t WordOfData;
-	
+
     WordOfData = 0x1232;
 
     eeprom_update_word((uint16_t*)46, WordOfData);
@@ -180,7 +180,7 @@ void main(void)
 {
     uint8_t StringOfData[10];
 
-    eeprom_read_block((void*)&StringOfData, (const void*)12, 10);
+    eeprom_read_block((void*)StringOfData, (const void*)12, 10);
 }
 \end{lstlisting}
 \end{center}
@@ -189,7 +189,7 @@ Again, looks hard doesn't it! But it isn't; let's break down the arguments we're
 
 \begin{center}
 \begin{lstlisting}
-(void*)&StringOfData
+(void*)StringOfData
 \end{lstlisting}
 \end{center}
 
@@ -221,7 +221,7 @@ void main(void)
 {
     uint8_t StringOfData[10] = "TEST";
 
-    eeprom_update_block((const void*)&StringOfData, (void*)12, 10);
+    eeprom_update_block((const void*)StringOfData, (void*)12, 10);
 }
 \end{lstlisting}
 \end{center}
@@ -318,11 +318,11 @@ int main(void)
 {
     uint8_t  SRAMchar;
     uint16_t SRAMint;
-    uint8_t  SRAMstring[10];   
+    uint8_t  SRAMstring[10];
 
     SRAMchar = eeprom_read_byte(&NonVolatileChar);
     SRAMint  = eeprom_read_word(&NonVolatileInt);
-    eeprom_read_block((void*)&SRAMstring, (const void*)&NonVolatileString, 10);
+    eeprom_read_block((void*)SRAMstring, (const void*)NonVolatileString, 10);
 }
 \end{lstlisting}
 \end{center}

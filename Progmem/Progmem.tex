@@ -61,7 +61,7 @@ const char FlashString[] PROGMEM = "This is a string held completely in flash me
 \end{lstlisting}
 \end{center}
 
-Now that the \lstinline{PROGMEM} string has a \lstinline{const} modifier, we cannot try to modify it in our code. The \lstinline{pgmspace.h} header also exposes a neat little macro, \lstinline{PSTR()}, which by some GCC magic allows you to create inline strings:
+Now that the \lstinline{PROGMEM} string has a \lstinline{const} modifier, we cannot try to modify it in our code. The \lstinline{pgmspace.h} header also exposes a neat little macro, \lstinline{PSTR()}, which by some GCC magic allows you to create inline strings that are kept in FLASH memory:
 
 \begin{center}
 \begin{lstlisting}
@@ -69,12 +69,12 @@ LCD_puts(PSTR("Program Memory String"));
 \end{lstlisting}
 \end{center}
 
-This stops you from having to clutter your program up with hundreds of variables which hold one-time-used strings. The downside to using the PSTR macro rather than a PROGMEM modified string variable is that you can only use the \lstinline{PSTR()} string once.
+This stops you from having to clutter your program up with hundreds of variables which hold one-time-used strings. The downside to using the PSTR macro rather than a \lstinline{PROGMEM} modified string variable is that you can only use it within functions - you can't use it as a global variable initializer. Also be aware that the compiler treats all \lstinline{PSTR()} declared strings as being completely seperate to one-another, so declaring the same string contents in multiple places will waste extra program FLASH memory. If you find yourself using the same string multiple times in your application, use a globally declared \lstinline{PROGMEM} string instead.
 
 However, we now have a problem --- now all your code doesn't work! What's wrong?
 
 
-The problem is that your string functions are expecting the string to be inside RAM. When you pass a string to a routine, you are in fact just passing a pointer to the start of the string in RAM. The string handling routine then just loads the bytes of the string one-by-one, starting from the pointer's location. But our \lstinline{PROGMEM} strings are not in RAM, so the pointer to them is invalid.
+The reason behind this is that your string functions are still expecting the source strings to be held inside RAM. When you pass a string to a routine, you are in fact just passing a pointer (a memory address) to the start of the string located somewhere in RAM. The string handling routine then just loads the bytes of the string one-by-one, starting from the pointer's location. But our \lstinline{PROGMEM} strings are not in RAM, so the pointer to them is invalid.
 
 A pointer to a string stored in \lstinline{PROGMEM} returns the address in flash memory at which the string is stored. It's still a valid pointer, it's just pointing to a different memory space. To use \lstinline{PROGMEM} strings in our application, we need to make our string routines \lstinline{PROGMEM}-pointer aware.
 
@@ -202,7 +202,7 @@ char MenuItem3[] = "Menu Item 3";
 
 char* MenuItemPointers[] = {MenuItem1, MenuItem2, MenuItem3};
 
-void main (void)
+void main(void)
 {
    while (1) // Eternal Loop
    {
@@ -227,7 +227,7 @@ const char MenuItem3[] PROGMEM = "Menu Item 3";
 
 const char* MenuItemPointers[] = {MenuItem1, MenuItem2, MenuItem3};
 
-void main (void)
+void main(void)
 {
    while (1) // Eternal Loop
    {
@@ -254,7 +254,7 @@ const char MenuItem3[] PROGMEM = "Menu Item 3";
 
 const char* MenuItemPointers[] PROGMEM = {MenuItem1, MenuItem2, MenuItem3};
 
-void main (void)
+void main(void)
 {
    while (1) // Eternal Loop
    {
@@ -285,7 +285,7 @@ const char MenuItem3[] PROGMEM = "Menu Item 3";
 
 const char* MenuItemPointers[] PROGMEM = {MenuItem1, MenuItem2, MenuItem3};
 
-void main (void)
+void main(void)
 {
    while (1) // Eternal Loop
    {
@@ -312,7 +312,7 @@ const char MenuItem3[] PROGMEM = "Menu Item 3";
 
 const char* MenuItemPointers[] PROGMEM = {MenuItem1, MenuItem2, MenuItem3};
 
-void main (void)
+void main(void)
 {
    while (1) // Eternal Loop
    {
@@ -324,6 +324,67 @@ void main (void)
 \end{lstlisting}
 \end{center}
 
-I recommend looking through the \textit{avrlib-c} documentation of the \lstinline{<avr/pgmspace.h} header documentation section for information about the other \lstinline{PROGMEM} related library functions avaliable. Other functions --- such as \lstinline{pgm_read_dword()}, which reads four bytes (double that of a word for the AVR architecture) --- behave in a similar manner to the functions detailed in this tutorial and might be of use for your end-application.
+I recommend looking through the \textit{avr-libc} documentation of the \lstinline{<avr/pgmspace.h>} header documentation section for information about the other \lstinline{PROGMEM} related library functions avaliable. Other functions --- such as \lstinline{pgm_read_dword()}, which reads four bytes (double that of a word for the AVR architecture) --- behave in a similar manner to the functions detailed in this tutorial and might be of use for your end-application.
+
+
+\section{PROGMEM Strings and \texttt{printf()}}
+
+Finally, let's cover another advanced use case of \lstinline{PROGMEM} strings; printing them out using the C string formatting library function \lstinline{printf()}. Not everyone is a fan of the string formatting functions located in the C standard library's \lstinline{<stdio.h>} header due to their large size and slow execution speed, but they can make complex applications quite a bit simpler if your can stomache the size/performance penalties. Lots of applications will typically contain code that looks something like this:
+
+\begin{center}
+\begin{lstlisting}
+char ParameterA = "Parameter A";
+char ParameterB = "Parameter B";
+
+void PrintParameterValue(char* ParameterName, uint8_t ParameterValue)
+{
+   printf("The value of %s is %d", ParameterName, ParameterValue);
+}
+\end{lstlisting}
+\end{center}
+
+Note that for clarity, the initialization code of the program is omitted -- if you aren't sure how to do this, see the \textit{avr-libc} library documentation. Here we have a simple function that formats a string and prints it to the standard output; the call site passes in a pointer to a string and a 8-bit integer, and the function formats it into a nice human-readable string and writes it out. The call site might look something like this:
+
+\begin{center}
+\begin{lstlisting}
+void WriteOutParameters(void)
+{
+   PrintParameterValue(ParameterA, 10);
+   PrintParameterValue(ParameterB, 20);
+}
+\end{lstlisting}
+\end{center}
+
+As we have done before, let's modify the code so that our fixed-strings \lstinline{ParameterA} and \lstinline{ParameterB} can be located in FLASH memory rather than RAM. First, we add the \lstinline{const} and \lstinline{PROGMEM} qualifiers to the global variables and the pointer passed into the function:
+
+\begin{center}
+\begin{lstlisting}
+const char ParameterA PROGMEM = "Parameter A";
+const char ParameterB PROGMEM = "Parameter B";
+
+void PrintParameterValue(const char* ParameterName, uint8_t ParameterValue)
+{
+   printf("The value of %s is %d", ParameterName, ParameterValue);
+}
+\end{lstlisting}
+\end{center}
+
+This application now compiles, but running it will produce incorrect output. Once again, we have the problem of a function (in this case, the \textit{avr-libc} provided \lstinline{printf()}) expecting a string that is located in RAM, while we're instead passing it a string located in FLASH. In the C language specification for the \lstinline{printf()} function a number of special formatting strings (that's the \lstinline{%s}, \lstinline{%d}, \lstinline{%g}, etc. that tells the function how to format the input parameters) are defined, but no specification was made to deal with multiple memory spaces. This isn't so suprising when you consider the origins of C and its single-memory space model, but it's a problem for us nonetheless.
+
+To fix up our code, we need to yet-again consult the \textit{avr-libc} manual, where we will find that the library implementors have helpfully provided some special extensions to the standard \lstinline{printf()} function - specifically, there's a non-standard \lstinline{%S} -- note the capitol ``S''! -- format specifier which tells the function the source string is located in \lstinline{PROGMEM}. Changing our format string to use \lstinline{%S} instead of the previous \lstinline{%s} fixes the application and allows us to merrily print out strings from either RAM or FLASH in our code using \lstinline{printf()}, \lstinline{sprintf()} and its related functions.
+
+\begin{center}
+\begin{lstlisting}
+const char ParameterA PROGMEM = "Parameter A";
+const char ParameterB PROGMEM = "Parameter B";
+
+void PrintParameterValue(const char* ParameterName, uint8_t ParameterValue)
+{
+   printf("The value of %S is %d", ParameterName, ParameterValue);
+}
+\end{lstlisting}
+\end{center}
+
+Unfortunately no such extensions exist for non-string inputs; so if you have integers for example that you have located into FLASH with \lstinline{PROGMEM}, you will need to read them out and buffer them into a RAM location before using \lstinline{printf()}.
 
 \end{document}

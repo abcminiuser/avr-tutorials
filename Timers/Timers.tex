@@ -35,9 +35,9 @@ This means the smallest amount of time the timer can measure is one period of th
 \end{array}
 \end{displaymath}
 
-For the above example, our period becomes .01 seconds, thus our timer will measure in multiples of this. If we measure a delay to be 45 timer periods, then our total delay will be 45 times .01 seconds, or .45 seconds.
+For the above example, our period becomes .01 seconds, thus our timer will be able to measure times that are a multiple of this duration. If we measure a delay to be 45 of our 100Hz timer periods, then our total delay will be 45 times .01 seconds, or .45 seconds.
 
-For this tutorial, I will assume the target to be ann ATMEGA16, running at at 1MHz clock. This is a nicely featured AVR containing certain timer functionality we'll need later on. As modern AVRs come running off their internal \(\approx\) 1MHz RC oscillator by default, you can use this without a problem (although do keep in mind the resultant timing measurements will be slightly incorrect due to the RC frequency tolerance).
+For this tutorial, I will assume the target to be an ATMEGA16, running at at 1MHz clock. This is a nicely featured AVR containing certain timer functionality we'll need later on. As modern AVRs come running off their internal \(\approx\) 1MHz RC oscillator by default, you can use this without a problem (although do keep in mind the resultant timing measurements will be slightly incorrect due to the RC frequency tolerance).
 
 In the sections dealing with toggling a LED, it is assumed to be connected to PORTB, bit 0 of your chosen AVR (pin 1 of DIP AVRMEGA16).
 
@@ -46,7 +46,7 @@ To start off, we will deal with basic timer functionality and move on from there
 \label{chp:TimersFcpu}
 \chapter{Timers running at Fcpu}
 
-We'll start with a simple example. We'll create a simple program to flash a LED at about 20Hz. Simple, right?
+We'll start with a simple example. We'll create a simple program to flash a LED at about 10Hz. Simple, right? Making a LED blink at 10Hz requires us to both turn it on and off again, so we need to perform a toggle of the LED's output state every 1/20th of a second.
 
 First, let's look at the pseudo-code required to drive this example:
 
@@ -64,8 +64,7 @@ END WHILE
 \end{lstlisting}
 \end{center}
 
-
-Very simple. We're just starting out, so we'll use the polled method of determining the elapsed time - we'll put in an IF statement in our code to check the current timer value, and act on it once it reaches (or exceeds) a certain value. Before we start on the timer stuff, let's create the skeleton of our project: 
+We're just starting out, so we'll use the polled method of determining the elapsed time - we'll put in an IF statement in our code to check the current timer value, and act on it once it reaches (or exceeds) a certain value. Before we start on the timer stuff, let's create the skeleton of our project: 
 
 \begin{center}
 \begin{lstlisting}
@@ -274,7 +273,7 @@ Or, rearranged:
 \text{Target Timer Count} = (\frac{\text{Input Frequency}}{\text{Prescale}} / \text{Target Frequency}) - 1  
 \end{displaymath}
 
-Now, we want to see if there is a prescaler value which will give an *exact* delay of 1Hz. One Hertz is equal to one cycle per second, so we want our compare value to be one second long, or 1000000uS. Let's divide that by each of our resolutions and put the results in a different table: 
+Now, we want to see if there is a prescaler value which will give an \textit{exact} delay of 1Hz. One Hertz is equal to one cycle per second, so we want our compare value to be one second long, or 1000000uS. Let's divide that by each of our resolutions and put the results in a different table: 
 
 \begin{center}
 \begin{tabular}{|l|l|}
@@ -290,9 +289,9 @@ Now, we want to see if there is a prescaler value which will give an *exact* del
 \end{tabular}
 \end{center}
 
-The results are interesting. Of the available prescaler values, we can immediately discount 256 and 1024 - they do not evenly divide into our wanted delay period. They are of course usable, but due to the rounding of the timer count value the resultant delay will be slightly over or under our needed delay. That leaves us with three possible prescales; 1, 8 and 64.
+The results are interesting. Of the available prescaler values, we can immediately discount 256 and 1024 - they do not evenly divide into our wanted delay period. They are of course usable, but due to the rounding of the timer count value the resultant delay will be slightly over or under our needed delay. That leaves us with three possible prescaler values that will suit our purposes; 1, 8 and 64.
 
-Our next task is to remove the values that aren't possible. On an 8-bit timer, that means discounting values of more than \(2^{8} - 1\), or 255, as the value won't fit into the timer's 8-bit count register. For our 16-bit timer, we have a larger range of 0 to \(2^{16}-1\), or 65535. Only one of our prescaler values satisfies this requirement --- a prescale of 64 --- as the other two possibilities require a timer count value of more bits than our largest 16-bit timer is capable of storing.
+Our next task is to remove the values that aren't possible given our hardware constraints. On an 8-bit timer, that means discounting values of more than \(2^{8}-1\), or 255, as the value won't fit into the timer's 8-bit count register. For our 16-bit timer, we have a larger range of 0 to \(2^{16}-1\), or 65535. Only one of our prescaler values satisfies this requirement --- a prescale of 64 --- as the other two possibilities require a timer count value of more bits than our largest 16-bit timer is capable of storing.
 
 Let's go back to our original timer program and modify it to compare against our new value of 15624, which we've found to be 1 second at a prescale of 64 and a F\subscript{cpu} of 1MHz: 
 
@@ -478,7 +477,7 @@ Compile and run, and the LED should toggle once per minute. By extending this te
 
 Up until now, we've been dealing with the timers in a very basic way - starting them counting, then comparing in our main routine against a wanted value. This is rather inefficient - we waste cycles checking the timer's value every time the loop runs, and slightly inaccurate (as the timer may pass our wanted compare value slightly while processing the loop). What if there was a better way?
 
-Well, there is. The AVR timers usually incorporate a special function mode called "Clear on Timer Compare", or CTC for short. The CTC operating mode does in hardware what we've previously experimented in software; it compares in hardware the current timer value against the wanted value, and when the wanted value is reached a flag in a status register is set and the timer's value reset.
+Well, there is. The AVR timers usually incorporate a special function mode called "Clear Timer on Compare", or CTC for short. The CTC operating mode does in hardware what we've previously experimented in software; it compares in hardware the current timer value against the wanted value, and when the wanted value is reached a flag in a status register is set and the timer's value reset.
 
 This is extremely handy; because the comparing is done in hardware, all we have to worry about is checking the flag to determine when to execute our LED toggling - much faster than comparing bytes or (in the case of the 16-bit timer) several bytes.
 
@@ -499,7 +498,7 @@ END WHILE
 \end{lstlisting}
 \end{center}
 
-Short and to the point. Note that the name of the mode is Clear on timer compare - the timer's value will automatically reset each time the compare value is reached, so we only need to clear the flag when the delay is reached. This set-and-forget system is very handy, as once the timer is configured and started we don't need to do anything other than check and clear its status registers.
+Short and to the point. Note that the name of the mode is \textit{Clear Timer on Compare} - the timer's value will automatically reset each time the compare value is reached, so we only need to clear the flag when the delay is reached. This set-and-forget system is very handy, as once the timer is configured and started we don't need to do anything other than check and clear its status registers.
 
 Now then, we'll grab our previous example, modifying it to fit with our new pseudocode: 
 

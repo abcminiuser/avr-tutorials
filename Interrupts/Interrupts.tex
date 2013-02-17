@@ -39,7 +39,7 @@ There are two main sources of interrupts:
 
 The 8-bit AVRs lack software interrupts, which are usually used for special operating system tasks like switching between user and kernel space, or for handling exceptions. Because of this, we'll only be looking at hardware interrupts.
 
-Each AVR model contains a different set of interrupt sources. We can find out which interrupts our chosen model has by looking in the ``Interrupts'' chapter of the AVR's datasheet. This chapter contains a table, similar to the following fragment from the AT90USB1287 datasheet: 
+Each AVR model contains a different set of interrupt sources. We can find out which interrupts our chosen model has by looking in the ``Interrupts'' chapter of the AVR's datasheet. This chapter contains a table, similar to the following fragment from the AT90USB1287 datasheet:
 
 \begin{center}
 \begin{tabular}{|l|l|l|l|}
@@ -63,19 +63,19 @@ Hardware interrupts can be useful to process sparingly occurring events, such as
 
 How we do interrupts varies between programming languages, but at the lowest level, we are simply making a general AVR function somewhere in the AVR's FLASH memory space, and ``linking'' it to a specific interrupt source by placing a JMP or RJMP instruction to this function at the address specified in the table we just looked at. At the start of the AVR's FLASH memory space lies the Interrupt Vector Table, which is simply a set of hardwired addresses which the AVR's processor will jump to when each of the interrupts fire. By placing a jump instruction at each interrupt's address in the table, we can make the AVR processor jump to our ISR which lies elsewhere.
 
-For an ISR to be called, we need three conditions to be true: 
+For an ISR to be called, we need three conditions to be true:
 
 \begin{itemize}
 \item \textbf{Firstly}, the AVR's global Interrupts Enable bit (I) must be set in the MCU control register SREG. This allows the AVR's core to process interrupts via ISRs when set, and prevents them from running when cleared. It defaults to being cleared on power up, so we need to set it.
 
 \item \textbf{Secondly}, the individual interrupt source's enable bit must be set. Each interrupt source has a separate interrupt enable bit in the related peripheral's control registers, which turns on the ISR for that interrupt. This must also be set, so that when the interrupt event occurs the processor runs the associated ISR.
 
-\item \textbf{Thirdly}, The condition for the interrupt must be met - for example, for the USART Receive Complete (USART RX) interrupt, a character must have been received. 
+\item \textbf{Thirdly}, The condition for the interrupt must be met - for example, for the USART Receive Complete (USART RX) interrupt, a character must have been received.
 \end{itemize}
 
 When all three conditions are met, the AVR will fire our ISR each time the interrupt event occurs.
 
-Again, the method used to define an ISR differs between langages and compilers, so I'll just put the AVR-GCC and AVR ASM versions here.
+Again, the method used to define an ISR differs between languages and compilers, so I'll just put the AVR-GCC and AVR ASM versions here.
 
 \begin{center}
 \begin{lstlisting}
@@ -84,7 +84,7 @@ Again, the method used to define an ISR differs between langages and compilers, 
 ISR({Vector Source}_vect)
 {
    // ISR code to execute here
-} 
+}
 \end{lstlisting}
 \end{center}
 
@@ -96,13 +96,13 @@ jmp MyISRHandler
 
 MyISRHandler:
   ; ISR code to execute here
-  reti 
+  reti
 \end{lstlisting}
 \end{center}
 
 Note that in the case of the assembly version, we need to add a \texttt{reti} instruction at the end of our interrupt instead of the usual \texttt{ret} instruction to return to the main program's execution; this special instruction has the dual function of exiting the ISR, and automatically re-enabling the Global Interrupt Enable bit. This happens inside the C version too when the function returns, we just don't see it normally.
 
-This raises the next point; \textbf{by default, on the AVR devices, interrupts are themselves not interruptable}. When an interrupt fires, the AVR CPU will automatically disable the Global Interrupt Enable bit, to prevent the ISR from being itself interrupted. This is to prevent stack overflows from too many interrupts occurring at once and to prevent the ISRs from running too long, as most uses of interrupts are to have minimal latency when processing an event. It's perfectly possible to set the Global Interrupt Enable bit again as part of the ISR so that nested interrupts can occur, but this is highly not recommended as it is dangerous. 
+This raises the next point; \textbf{by default, on the AVR devices, interrupts are themselves not interruptible}. When an interrupt fires, the AVR CPU will automatically disable the Global Interrupt Enable bit, to prevent the ISR from being itself interrupted. This is to prevent stack overflows from too many interrupts occurring at once and to prevent the ISRs from running too long, as most uses of interrupts are to have minimal latency when processing an event. It's perfectly possible to set the Global Interrupt Enable bit again as part of the ISR so that nested interrupts can occur, but this is highly not recommended as it is dangerous.
 
 
 \label{chp:EnableInt}
@@ -125,7 +125,7 @@ Next, we also need to enable a specific interrupt source, to satisfy the second 
 \begin{lstlisting}
 in r16, UCSRB
 ori r16, (1 << RXCIE)
-out UCSRB, r16 
+out UCSRB, r16
 \end{lstlisting}
 \end{center}
 
@@ -133,11 +133,11 @@ Or in C:
 
 \begin{center}
 \begin{lstlisting}
-UCSRB |= (1 << RXCIE); 
+UCSRB |= (1 << RXCIE);
 \end{lstlisting}
 \end{center}
 
-That should be enough to make the AVR's execution jump to the appropriate ISR when the interrupt occurs. 
+That should be enough to make the AVR's execution jump to the appropriate ISR when the interrupt occurs.
 
 
 \label{chp:ImportantInfo}
@@ -146,10 +146,10 @@ That should be enough to make the AVR's execution jump to the appropriate ISR wh
 There are a few things to keep in mind when using interrupts in your program:
 
 \section{When an interrupt is executing, your main program isn't}
-That means that if your application isn't robust and your receive many interrupts in a very short space of time, your main program's execution will slow to a halt. Keep this in mind when you decided to attach a 4MHz clock input to an external interrupt pin.
+That means that if your application isn't robust and you receive many interrupts in a very short space of time, your main program's execution will slow to a halt. Keep this in mind when you decide to attach a 4MHz clock input to an external interrupt pin.
 
 \section{Data shared between the ISR and your main program must be both volatile and global in scope in the C language}
-Without the volatile keyword, the compiler may optimize out accesses to a variable you update in an ISR, as the C language itself has no concept of different execution threads. Take the following example:
+Without the \texttt{volatile} keyword, the compiler may optimize out accesses to a variable you update in an ISR, as the C language itself has no concept of different execution threads. Take the following example:
 
 \begin{center}
 \begin{lstlisting}
@@ -215,13 +215,13 @@ Your compiler may vary.
 If two or more of the same interrupt event occurs while you are in the middle of processing an ISR, you will only receive one ISR call for the event when the current ISR terminates, and the remaining interrupt events will be lost.
 
 \section{The interrupt source flag is usually cleared when the ISR fires}
-This isn't always the case (some interrupt flags are cleared when a particular register is read, such as the USART receive complete flag) however this is more of an exception to the rule. The upshot of this is that if you receive another interrupt to the source you are currently processing while in its ISR, you'll get another call to the ISR once the current one terminates. Again, you are still limited to a single ``event occurred'' flag for each interrupt, so you can miss interrupts if many happen at once before you have a chance to process them.
+This isn't always the case (some interrupt flags are cleared when a particular register is read, such as the USART receive complete flag), however, this is more of an exception to the rule. The upshot of this is that if you receive another interrupt to the source you are currently processing while in its ISR, you'll get another call to the ISR once the current one terminates. Again, you are still limited to a single ``event occurred'' flag for each interrupt, so you can miss interrupts if many happen at once before you have a chance to process them.
 
 
 \label{chp:FinalWords}
 \chapter{Putting it all together}
 
-Rather than waste my efforts by repeating what I've already done before here, I will instead direct readers to my previous tutorial on Interrupt Driven USART Communications for a short, practical example of how to use interrupts in an application. 
+Rather than waste my efforts by repeating what I've already done before here, I will instead direct readers to my previous tutorial on Interrupt Driven USART Communications for a short, practical example of how to use interrupts in an application.
 
 
 \end{document}

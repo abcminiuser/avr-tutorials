@@ -19,7 +19,7 @@ We use timers every day---the most simple one can be found on your wrist. A simp
 
 The AVR timers are very useful as they can run asynchronous to the main AVR core. This is a fancy way of saying that the timers are separate circuits on the AVR chip which can run independent of the main program, interacting via the control and count registers, and the timer interrupts. Timers can be configured to produce outputs directly to pre-determined pins, reducing the processing load on the AVR core.
 
-One thing that trips those new to the AVR timer is the clock source. Like all digital systems, the timer requires a clock in order to function. As each clock pulse increments the timer's counter by one, the timer measures intervals in periods of one on the input frequency: 
+One thing that trips those new to the AVR timer is the clock source. Like all digital systems, the timer requires a clock in order to function. As each clock pulse increments the timer's counter by one, the timer measures intervals in periods of one on the input frequency:
 
 \begin{displaymath}
 	\text{Timer Resolution} = \frac{1}{\text{Input Frequency}}
@@ -41,7 +41,7 @@ For this tutorial, I will assume the target to be an ATMEGA16, running at at 1MH
 
 In the sections dealing with toggling a LED, it is assumed to be connected to PORTB, bit 0 of your chosen AVR (pin 1 of DIP AVRMEGA16).
 
-To start off, we will deal with basic timer functionality and move on from there. 
+To start off, we will deal with basic timer functionality and move on from there.
 
 \label{chp:TimersFcpu}
 \chapter{Timers running at Fcpu}
@@ -64,7 +64,7 @@ END WHILE
 \end{lstlisting}
 \end{center}
 
-We're just starting out, so we'll use the polled method of determining the elapsed time - we'll put in an IF statement in our code to check the current timer value, and act on it once it reaches (or exceeds) a certain value. Before we start on the timer stuff, let's create the skeleton of our project: 
+We're just starting out, so we'll use the polled method of determining the elapsed time - we'll put in an IF statement in our code to check the current timer value, and act on it once it reaches (or exceeds) a certain value. Before we start on the timer stuff, let's create the skeleton of our project:
 
 \begin{center}
 \begin{lstlisting}
@@ -80,11 +80,11 @@ int main (void)
    {
       // TODO: Check timer value, reset and toggle LED when count matches 1/20 of a second
    }
-} 
+}
 \end{lstlisting}
 \end{center}
 
-Extremely simple. I'm going to assume you are familiar with the basics of setting up AVR ports as well as bit manipulation (if you're uncertain about the latter, refer to \href{http://www.avrfreaks.net/index.php?name=PNphpBB2&file=viewtopic&t=37871}{this excellent tutorial}). With that in mind, I'll add in the LED-related code and add in the IF statement: 
+Extremely simple. I'm going to assume you are familiar with the basics of setting up AVR ports as well as bit manipulation (if you're uncertain about the latter, refer to \href{http://www.avrfreaks.net/index.php?name=PNphpBB2&file=viewtopic&t=37871}{this excellent tutorial}). With that in mind, I'll add in the LED-related code and add in the IF statement:
 
 \begin{center}
 \begin{lstlisting}
@@ -106,7 +106,7 @@ int main (void)
          // TODO: Reset timer value
       }
    }
-} 
+}
 \end{lstlisting}
 \end{center}
 
@@ -122,10 +122,10 @@ Our timer will be running at the same clock speed as the AVR core to start with,
 
 \begin{displaymath}
 \begin{array}{rcl}
-\text{Target Timer Count} & = & \frac{1}{\text{Target Frequency}} / \frac{1}{\text{Timer Clock Frequency}} - 1 \\
-                          & = & \frac{1}{20} / \frac{1}{1000000} - 1 \\
-                          & = & \frac{.05}{0.000001} - 1 \\
-                          & = & 50000 - 1 \\
+\text{Target Timer Count} & = & \frac{1}{\text{Target Frequency}} / \frac{1}{\text{Timer Clock Frequency}} - 1 \\[6pt]
+                          & = & \frac{1}{20} / \frac{1}{1000000} - 1 \\[6pt]
+                          & = & \frac{.05}{0.000001} - 1 \\[6pt]
+                          & = & 50000 - 1 \\[6pt]
                           & = & 49999
 \end{array}
 \end{displaymath}
@@ -134,7 +134,7 @@ The AVR timers will only update their count on each timer input clock tick, thus
 
 So running at 1MHz, our timer needs to count to 49999 before \(\frac{1}{20}\)th of a second has elapsed. That's a very large value - too large for an 8 bit value! We'll need to use the 16 bit timer 1 instead.
 
-Firstly, we need to start the timer at the top of our main routine, so that it will start counting. To do this, we need to supply the timer with a clock; as soon as it is clocked it will begin counting in parallel with the AVR's CPU core (this is called synchronous operation). To supply a clock of F\subscript{cpu} to the timer 1 circuits we need to set the CS10 bit (which selects a F\subscript{cpu} prescale of 1 - more on that later) in the \texttt{TCCR1B}, the Timer 1 Control Register B. 
+Firstly, we need to start the timer at the top of our main routine, so that it will start counting. To do this, we need to supply the timer with a clock; as soon as it is clocked it will begin counting in parallel with the AVR's CPU core (this is called synchronous operation). To supply a clock of F\subscript{cpu} to the timer 1 circuits we need to set the CS10 bit (which selects a F\subscript{cpu} prescale of 1 - more on that later) in the \texttt{TCCR1B}, the Timer 1 Control Register B.
 
 \begin{center}
 \begin{lstlisting}
@@ -156,7 +156,7 @@ int main (void)
          // TODO: Reset timer value
       }
    }
-} 
+}
 \end{lstlisting}
 \end{center}
 
@@ -186,7 +186,7 @@ int main (void)
          // TODO: Reset timer value
       }
    }
-} 
+}
 \end{lstlisting}
 \end{center}
 
@@ -212,13 +212,13 @@ int main (void)
          TCNT1 = 0; // Reset timer value
       }
    }
-} 
+}
 \end{lstlisting}
 \end{center}
 
 And there we have it! We've just created a very basic program that will toggle our LED every \(\frac{1}{20}\) of a second at a 1MHz clock. Testing it out on physical hardware should show the LED being dimmer than normal (due to it being pulsed quickly). Good eyesight might reveal the LED's very fast flickering.
 
-Next, we'll learn about the prescaler so we can try to slow things down a bit. 
+Next, we'll learn about the prescaler so we can try to slow things down a bit.
 
 
 \label{chp:PrescaledTimers}
@@ -234,7 +234,7 @@ Our calculations for our new timer value are exactly the same as before, except 
 
 \begin{displaymath}
 \begin{array}{rcl}
-	\text{Timer Resolution} & = & \frac{1}{\text{Input Frequency} / \text{Prescale}} \\
+	\text{Timer Resolution} & = & \frac{1}{\text{Input Frequency} / \text{Prescale}} \\[6pt]
 	                        & = & \frac{\text{Prescale}}{\text{Input Frequency}}
 \end{array}
 \end{displaymath}
@@ -255,25 +255,28 @@ For a 1MHz clock, we can construct a table of resolutions using the available pr
 \end{tabular}
 \end{center}
 
-If you recall our equation for calculating the timer value for a particular delay in chapter \ref{chp:TimersFcpu} of this tutorial, you'll remember it is the following: 
+If you recall our equation for calculating the timer value for a particular delay in chapter \ref{chp:TimersFcpu} of this tutorial, you'll remember it is the following:
 
 \begin{displaymath}
-\text{Target Timer Count} = \frac{1}{\text{Target Frequency}} / \frac{1}{\text{Timer Clock Frequency}} - 1 \\
+\text{Target Timer Count} = \frac{1}{\text{Target Frequency}} / \frac{1}{\text{Timer Clock Frequency}} - 1
 \end{displaymath}
 
-However, as we've just altered the prescaler term, the latter half is now different. Substituting in our new resolution equation from above we get: 
+However, as we've just altered the prescaler term, the latter half is now different. Substituting in our new resolution equation from above we get:
 
 \begin{displaymath}
-\text{Target Timer Count} = (\frac{1}{\text{Target Frequency}} / \frac{\text{Prescale}}{\text{Input Frequency}}) - 1 
+\text{Target Timer Count} = (\frac{1}{\text{Target Frequency}} / \frac{\text{Prescale}}{\text{Input Frequency}}) - 1
 \end{displaymath}
 
 Or, rearranged:
 
 \begin{displaymath}
-\text{Target Timer Count} = (\frac{\text{Input Frequency}}{\text{Prescale}} / \text{Target Frequency}) - 1  
+\begin{array}{rcl}
+\text{Target Timer Count} & = & (\frac{\text{Input Frequency}}{\text{Prescale} \times \text{Target Frequency}}) - 1 \\[6pt]
+                          & = & (\frac{\text{Input Frequency}}{\text{Prescale} \times \text{Target Frequency}}) - 1
+\end{array}
 \end{displaymath}
 
-Now, we want to see if there is a prescaler value which will give an \textit{exact} delay of 1Hz. One Hertz is equal to one cycle per second, so we want our compare value to be one second long, or 1000000uS. Let's divide that by each of our resolutions and put the results in a different table: 
+Now, we want to see if there is a prescaler value which will give an \textit{exact} delay of 1Hz. One Hertz is equal to one cycle per second, so we want our compare value to be one second long, or 1000000uS. Let's divide that by each of our resolutions and put the results in a different table:
 
 \begin{center}
 \begin{tabular}{|l|l|}
@@ -293,7 +296,7 @@ The results are interesting. Of the available prescaler values, we can immediate
 
 Our next task is to remove the values that aren't possible given our hardware constraints. On an 8-bit timer, that means discounting values of more than \(2^{8}-1\), or 255, as the value won't fit into the timer's 8-bit count register. For our 16-bit timer, we have a larger range of 0 to \(2^{16}-1\), or 65535. Only one of our prescaler values satisfies this requirement --- a prescale of 64 --- as the other two possibilities require a timer count value of more bits than our largest 16-bit timer is capable of storing.
 
-Let's go back to our original timer program and modify it to compare against our new value of 15624, which we've found to be 1 second at a prescale of 64 and a F\subscript{cpu} of 1MHz: 
+Let's go back to our original timer program and modify it to compare against our new value of 15624, which we've found to be 1 second at a prescale of 64 and a F\subscript{cpu} of 1MHz:
 
 \begin{center}
 \begin{lstlisting}
@@ -315,13 +318,13 @@ int main (void)
          TCNT1 = 0; // Reset timer value
       }
    }
-} 
+}
 \end{lstlisting}
 \end{center}
 
 Note I've removed the timer setup line, as it is no longer valid. We want to set up our timer to run at Fcpu/64 now. To do this, we need to look at the datasheet of the ATMEGA16 to see which bits need to be set in which control registers.
 
-Checking indicates that we need to set both the \texttt{CS10} and \texttt{CS11} prescaler bits in \texttt{TCCR1B}, so let's add that to our program: 
+Checking indicates that we need to set both the \texttt{CS10} and \texttt{CS11} prescaler bits in \texttt{TCCR1B}, so let's add that to our program:
 
 \begin{center}
 \begin{lstlisting}
@@ -354,7 +357,7 @@ Compile it, and we're done! Remember that our timer runs as soon as it gets a cl
 
 So far, we've learned how to use the timers in their most basic counting mode to delay a specified duration. However, we've also discovered a limitation of the timers --- their maximum duration that their timer count registers can hold. We've managed to get a 1Hz delay out of a prescaled 16-bit timer with a prescale, but what if we want a delay of a minute? An hour? A week or year?
 
-The answer is to create a sort of prescaler of our own in software. By making the hardware timer count to a known delay --- say the 1Hz we created earlier --- we can increment a variable each time that period is reached, and only act after the counter is reached a certain value. Let's pseudocode this so we can get a better understanding of what we want to do: 
+The answer is to create a sort of prescaler of our own in software. By making the hardware timer count to a known delay --- say the 1Hz we created earlier --- we can increment a variable each time that period is reached, and only act after the counter is reached a certain value. Let's pseudocode this so we can get a better understanding of what we want to do:
 
 \begin{center}
 \begin{lstlisting}[keywordstyle=\color{black},commentstyle=\color{black}]
@@ -396,11 +399,11 @@ int main (void)
          TCNT1 = 0; // Reset timer value
       }
    }
-} 
+}
 \end{lstlisting}
 \end{center}
 
-We need some code to create and initialise a new counter variable to 0, then increment it when the counter reaches one second as our pseudocode states. We also need to add in a test to see if our new variable reaches the value of 60, indicating that one minute has elapsed. 
+We need some code to create and initialise a new counter variable to 0, then increment it when the counter reaches one second as our pseudocode states. We also need to add in a test to see if our new variable reaches the value of 60, indicating that one minute has elapsed.
 
 \begin{center}
 \begin{lstlisting}
@@ -465,7 +468,7 @@ int main (void)
          }
       }
    }
-} 
+}
 \end{lstlisting}
 \end{center}
 
@@ -481,7 +484,7 @@ Well, there is. The AVR timers usually incorporate a special function mode calle
 
 This is extremely handy; because the comparing is done in hardware, all we have to worry about is checking the flag to determine when to execute our LED toggling - much faster than comparing bytes or (in the case of the 16-bit timer) several bytes.
 
-CTC mode is very straightforward. Before we look into the implementation, let's pseudocode what we want to do. 
+CTC mode is very straightforward. Before we look into the implementation, let's pseudocode what we want to do.
 
 \begin{center}
 \begin{lstlisting}[keywordstyle=\color{black},commentstyle=\color{black}]
@@ -494,13 +497,13 @@ WHILE forever
     Toggle LED
     Clear CTC flag
   END IF
-END WHILE 
+END WHILE
 \end{lstlisting}
 \end{center}
 
 Short and to the point. Note that the name of the mode is \textit{Clear Timer on Compare} - the timer's value will automatically reset each time the compare value is reached, so we only need to clear the flag when the delay is reached. This set-and-forget system is very handy, as once the timer is configured and started we don't need to do anything other than check and clear its status registers.
 
-Now then, we'll grab our previous example, modifying it to fit with our new pseudocode: 
+Now then, we'll grab our previous example, modifying it to fit with our new pseudocode:
 
 \begin{center}
 \begin{lstlisting}
@@ -602,7 +605,7 @@ Checking for a CTC event involves checking the \texttt{OCF1A} flag in this regis
 
 Very strange indeed! In order to clear the CTC flag, we actually need to set it - even though it's already set. Due to some magic circuitry inside the AVR, writing a 1 to the flag when its set will actually cause it to clear itself. This is an interesting behaviour, and is the same across all the interrupt bits. There's a good reason for the flags to be cleared this way, although it is a little outside the scope of this tutorial.
 
-Despite that, we can now add in our last lines of code to get a working example: 
+Despite that, we can now add in our last lines of code to get a working example:
 
 \begin{center}
 \begin{lstlisting}
@@ -630,7 +633,7 @@ int main (void)
 \end{lstlisting}
 \end{center}
 
-And there we have it, a working .5Hz LED flasher using the CTC timer mode! 
+And there we have it, a working .5Hz LED flasher using the CTC timer mode!
 
 
 \label{chp:CTCInt}
@@ -642,7 +645,7 @@ Interrupts are events that when enabled, cause the AVR to execute a special rout
 
 The AVR timers can have several different Interrupts - typically Overflow, Compare and Capture. Overflow occurs when the timer's value rolls past it's maximum and back to zero (for an 8 bit timer, that's when it counts past 11111111 in binary and resets back to 00000000). However, for this section we'll deal with the Compare interrupt, which occurs in CTC mode when the compare value is reached.
 
-Again, we'll pseudocode this to start with: 
+Again, we'll pseudocode this to start with:
 
 \begin{center}
 \begin{lstlisting}[keywordstyle=\color{black},commentstyle=\color{black}]
@@ -657,7 +660,7 @@ END WHILE
 
 ISR Timer Compare
    Toggle LED
-END ISR 
+END ISR
 \end{lstlisting}
 \end{center}
 
@@ -686,7 +689,7 @@ int main (void)
    }
 }
 
-// TODO: Add compare ISR here 
+// TODO: Add compare ISR here
 \end{lstlisting}
 \end{center}
 
@@ -712,7 +715,7 @@ This gives us access to the API for dealing with interrupts. We want to create a
 ISR(VectorName_vect)
 {
    // Code to execute on ISR fire here
-} 
+}
 \end{lstlisting}
 \end{center}
 
@@ -747,7 +750,7 @@ int main (void)
 ISR(TIMER1_COMPA_vect)
 {
    PORTB ^= (1 << 0); // Toggle the LED
-} 
+}
 \end{lstlisting}
 \end{center}
 
@@ -757,7 +760,7 @@ Running the code so far won't yield any results. This is because although we hav
 
 The way to turn on our specific interrupt is to look into the second interrupt-related register for our timer, \texttt{TIMSK}. This is the Timer Interrupt Mask register, which turns on and off ISRs to handle specific timer events. Note that on the ATMEGA16 this single register contains the enable bits for all the timer interrupts for all the available timers. We're only interested in the Timer 1 Compare A Match interrupt enable bit, which we can see listed as being called \texttt{OCIE1A} (Output Compare Interrupt Enable, channel A).
 
-By setting that bit we instruct the timer to execute our ISR upon compare match with our specified compare value. Let's put that line into our program's code and see how it all looks. 
+By setting that bit we instruct the timer to execute our ISR upon compare match with our specified compare value. Let's put that line into our program's code and see how it all looks.
 
 \begin{center}
 \begin{lstlisting}
@@ -787,13 +790,13 @@ int main (void)
 ISR(TIMER1_COMPA_vect)
 {
    PORTB ^= (1 << 0); // Toggle the LED
-} 
+}
 \end{lstlisting}
 \end{center}
 
 Only one more thing to do --- enable global interrupts. The AVR microcontrollers have a single control bit which turns on and off interrupt handling functionality. This is used in pieces of code where interrupt handling is not desired, or to disable interrupts while an ISR is already being executed. The latter is done automatically for us, so all we need to do is turn on the bit at the start of our code, and our compare interrupt will start to work.
 
-The command to do this is called \texttt{sei()} in the avr-libc library that ships with WinAVR, and is named to correspond with the assembly instruction which does the same for AVRs (the SEI instruction). That's irrelevant however, as we just need to call the command in our code. 
+The command to do this is called \texttt{sei()} in the avr-libc library that ships with WinAVR, and is named to correspond with the assembly instruction which does the same for AVRs (the SEI instruction). That's irrelevant however, as we just need to call the command in our code.
 
 \begin{center}
 \begin{lstlisting}
@@ -823,7 +826,7 @@ int main (void)
 ISR(TIMER1_COMPA_vect)
 {
    PORTB ^= (1 << 0); // Toggle the LED
-} 
+}
 \end{lstlisting}
 \end{center}
 
@@ -843,7 +846,7 @@ Looking at the timer 1 control registers, we can see a few pairs of bits we've p
 
 These bits allow us to control the hardware behaviour when a compare occurs. Instead of firing an interrupt, the hardware can be configured to set, clear or toggle the \texttt{OCxy} (where ``x'' is the timer number, ``y'' is the channel letter for timers with more than one channel) hardware pins when a compare occurs. We can use the toggle function with our LED flasher, so that the hardware toggles the LED's state for us automatically, making it a true set-and-forget operation.
 
-Before we do anything else, let's work out which pins of our ATMEGA16 are linked to the Compare Output hardware --- we want the pins with alternative functions starting with ``\texttt{OC}''. On our PDIP package version, that maps to: 
+Before we do anything else, let's work out which pins of our ATMEGA16 are linked to the Compare Output hardware --- we want the pins with alternative functions starting with ``\texttt{OC}''. On our PDIP package version, that maps to:
 
 \begin{center}
 \begin{tabular}{|l|l|}
@@ -852,7 +855,7 @@ Before we do anything else, let's work out which pins of our ATMEGA16 are linked
 	\hline
 	PB3 & OC0  \\
 	PD4 & OC1B \\
-	PD5 & OC1A \\ 
+	PD5 & OC1A \\
 	\hline
 \end{tabular}
 \end{center}
@@ -871,11 +874,11 @@ Enable timer 1 Compare Output channel A in toggle mode
 Set timer compare value to one second
 
 WHILE forever
-END WHILE 
+END WHILE
 \end{lstlisting}
 \end{center}
 
-Amazing how simple it is, isn't it! Well, we can already fill in almost all of this: 
+Amazing how simple it is, isn't it! Well, we can already fill in almost all of this:
 
 \begin{center}
 \begin{lstlisting}
@@ -929,11 +932,11 @@ int main (void)
    {
 
    }
-} 
+}
 \end{lstlisting}
 \end{center}
 
-Simple, isn't it! We've now created the simplest (code-wise) LED flasher possible using pure hardware functionality. Running this will cause the LED to flash at .5Hz, without any code other than the timer initialization! 
+Simple, isn't it! We've now created the simplest (code-wise) LED flasher possible using pure hardware functionality. Running this will cause the LED to flash at .5Hz, without any code other than the timer initialization!
 
 
 \label{chp:Overflows}
@@ -953,31 +956,31 @@ So why would we need the overflow interrupt? Well, I leave that as an excersize 
 
 Calculating the frequency of the flashing is a little different to our previous examples, as now we have to calculate in reverse (to find the frequency from the timer count and timer resolution rather than the timer count from a known frequency and timer resolution). We'll still be working with our 16-bit timer 1 for this example, to be consistent with previous chapters.
 
-Let's go back to our one of the timer equations we used back in chapter \ref{chp:TimersFcpu}: 
+Let's go back to our one of the timer equations we used back in chapter \ref{chp:TimersFcpu}:
 
 \begin{displaymath}
-\text{Target Timer Count} = (\frac{\text{Input Frequency}}{\text{Prescale}} / \text{Target Frequency}) - 1  
+\text{Target Timer Count} = (\frac{\text{Input Frequency}}{\text{Prescale} \times \text{Target Frequency}}) - 1
 \end{displaymath}
 
-We want to determine the Target Frequency from the other two variables, so let's rearrange: 
+We want to determine the Target Frequency from the other two variables, so let's rearrange:
 
 \begin{displaymath}
-(\text{Target Timer Count} + 1) * (\text{Prescale} / \text{Input Frequency}) = \frac{1}{\text{Target Frequency}}
+(\text{Target Timer Count} + 1) \times \frac{\text{Prescale}}{\text{Input Frequency}} = \frac{1}{\text{Target Frequency}}
 \end{displaymath}
 
 And swap the left and right hand sides to get it into a conventional form:
 
 \begin{displaymath}
-\frac{1}{\text{Target Frequency}} = (\text{Target Timer Count} + 1) * (\text{Prescale} / \text{Input Frequency})
+\frac{1}{\text{Target Frequency}} = (\text{Target Timer Count} + 1) \times \frac{\text{Prescale}}{\text{Input Frequency}}
 \end{displaymath}
 
-Since we know that for the overflow equation, the ``Target Timer Count'' becomes the maximum value that can be held by the timer's count register, plus one (as the overflow occurs after the count rolls over from the maximum back to zero). The formula for the maximum value that can be held in a number of bits is: 
+Since we know that for the overflow equation, the ``Target Timer Count'' becomes the maximum value that can be held by the timer's count register, plus one (as the overflow occurs after the count rolls over from the maximum back to zero). The formula for the maximum value that can be held in a number of bits is:
 
 \begin{displaymath}
-\text{Max Value} = 2^\text{Bits} - 1 
+\text{Max Value} = 2^\text{Bits} - 1
 \end{displaymath}
 
-But we want one more than that to get the number of timer counts until an overflow occurs: 
+But we want one more than that to get the number of timer counts until an overflow occurs:
 
 \begin{displaymath}
 \text{Counts Until Overflow} = 2^\text{Bits}
@@ -986,23 +989,23 @@ But we want one more than that to get the number of timer counts until an overfl
 Change ``Max Value'' to the more appropriate ``Target Timer Count'' in the first timer equation:
 
 \begin{displaymath}
-\frac{1}{\text{Target Frequency}} = (\text{Target Timer Count} + 1) * (\text{Prescale} / \text{Input Frequency})
+\frac{1}{\text{Target Frequency}} = (\text{Target Timer Count} + 1) \times \frac{\text{Prescale}}{\text{Input Frequency}}
 \end{displaymath}
 
-And substitute in the formula for the counts until overflow to get the timer period equation. Since frequency is just the inverse of period, we can also work out the frequencies of each duration as well: 
+And substitute in the formula for the counts until overflow to get the timer period equation. Since frequency is just the inverse of period, we can also work out the frequencies of each duration as well:
 
 \begin{displaymath}
-\text{Target Period} = \frac{1}{Target Frequency}
+\text{Target Period} = \frac{1}{\text{Target Frequency}}
 \end{displaymath}
 
 \begin{displaymath}
-\text{Target Period} = 2^\text{Bits} * \frac{\text{Prescale}}{\text{Input Frequency}}
+\text{Target Period} = 2^\text{Bits} \times \frac{\text{Prescale}}{\text{Input Frequency}}
 \end{displaymath}
 
 Which is a bit complex, but such is life. Now's the fun part - we can now work out the overflow frequencies and periods for our 16-bit Timer 1 running at different prescales of our AVR's 1MHz system clock:
 
 \begin{displaymath}
-\text{Target Period} = 2^{16} * \frac{\text{Prescale}}{\text{Input Frequency}}
+\text{Target Period} = 2^{16} \times \frac{\text{Prescale}}{\text{Input Frequency}}
 \end{displaymath}
 
 \begin{center}
@@ -1023,7 +1026,7 @@ Note how our frequency decreases (and period increases) as our prescaler increas
 
 For this example, we'll use a prescaler of 8, to give a 1.8Hz flashing frequency, and a period of about half a second.
 
-Almost time to get into the code implementation. But first, pseudocode! I'm going to extrapolate on the preceding chapters and jump straight into the ISR-powered example, rather than begin with a polled example. It works in the same manner as previous polled experiments, except for the testing of the overflow bit rather than the CTC bit. 
+Almost time to get into the code implementation. But first, pseudocode! I'm going to extrapolate on the preceding chapters and jump straight into the ISR-powered example, rather than begin with a polled example. It works in the same manner as previous polled experiments, except for the testing of the overflow bit rather than the CTC bit.
 
 \begin{center}
 \begin{lstlisting}[keywordstyle=\color{black},commentstyle=\color{black}]
@@ -1036,11 +1039,11 @@ END WHILE
 
 ISR Timer Overflow
    Toggle LED
-END ISR 
+END ISR
 \end{lstlisting}
 \end{center}
 
-Let's get started. As always, we'll begin with the skeleton program: 
+Let's get started. As always, we'll begin with the skeleton program:
 
 \begin{center}
 \begin{lstlisting}
@@ -1062,7 +1065,7 @@ int main (void)
    }
 }
 
-// TODO: Add overflow ISR here 
+// TODO: Add overflow ISR here
 \end{lstlisting}
 \end{center}
 
@@ -1095,7 +1098,7 @@ int main (void)
 ISR(TIMER1_OVF_vect)
 {
    PORTB ^= (1 << 0); // Toggle the LED
-} 
+}
 \end{lstlisting}
 \end{center}
 
@@ -1130,7 +1133,7 @@ ISR(TIMER1_OVF_vect)
 
 The last thing we need to do, is start the timer with a prescaler of 8. This should be easy for you to do --- if not, refer back to chapter \ref{chp:TimersFcpu}.
 
-The ATMEGA16 Datasheet, Timer 1 section tells us that for a timer running with a prescaler of 8, we need to start it with the bit \texttt{CS11} set in the control register \texttt{TCCR1B}. Adding that to our code finishes our simple program: 
+The ATMEGA16 Datasheet, Timer 1 section tells us that for a timer running with a prescaler of 8, we need to start it with the bit \texttt{CS11} set in the control register \texttt{TCCR1B}. Adding that to our code finishes our simple program:
 
 \begin{center}
 \begin{lstlisting}
@@ -1159,7 +1162,7 @@ ISR(TIMER1_OVF_vect)
 \end{lstlisting}
 \end{center}
 
-All done! This simple program will cause the LED to toggle each time the overflow occurs and serves as a practical use of the overflow interrupt. 
+All done! This simple program will cause the LED to toggle each time the overflow occurs and serves as a practical use of the overflow interrupt.
 
 
 \label{chp:OverflowCTC}
@@ -1190,19 +1193,19 @@ END ISR
 \end{lstlisting}
 \end{center}
 
-Let's examine the maths again. From chapter \ref{chp:TimersFcpu}, we know that the formula for determining the number of timer clock cycles needed for a given delay is: 
+Let's examine the maths again. From chapter \ref{chp:TimersFcpu}, we know that the formula for determining the number of timer clock cycles needed for a given delay is:
 
 \begin{displaymath}
-\text{Target Timer Count} = (\frac{\text{Input Frequency}}{\text{Prescale}} / \text{Target Frequency}) - 1  
+\text{Target Timer Count} = (\frac{\text{Input Frequency}}{\text{Prescale} \times \text{Target Frequency}}) - 1
 \end{displaymath}
 
-Which works for a fixed \texttt{BOTTOM} of zero, and a variable \texttt{TOP}. We've got the ``upside-down'' implementation of a fixed \texttt{TOP} of \(0 \text{ to } 2^\text{Bits}-1\) and a variable \texttt{BOTTOM}. Our \texttt{BOTTOM} value becomes the \texttt{TOP} minus the number of clock cycles needed for the equivelent CTC value, so the formula becomes: 
+Which works for a fixed \texttt{BOTTOM} of zero, and a variable \texttt{TOP}. We've got the ``upside-down'' implementation of a fixed \texttt{TOP} of \(0 \text{ to } 2^\text{Bits}-1\) and a variable \texttt{BOTTOM}. Our \texttt{BOTTOM} value becomes the \texttt{TOP} minus the number of clock cycles needed for the equivelent CTC value, so the formula becomes:
 
 \begin{displaymath}
-\text{Reload Timer Value} = (2^\text{Bits} - 1) - (\frac{\text{Input Frequency}}{\text{Prescale}} / Target Frequency) 
+\text{Reload Timer Value} = (2^\text{Bits} - 1) - (\frac{\text{Input Frequency}}{\text{Prescale} \times \text{Target Frequency}})
 \end{displaymath}
 
-Let's go with the previous example in chapter \ref{chp:TimersFcpu}: a .5Hz flasher, using a 1MHz clock and a prescale of 64. We found the timer count to be 15625 for those conditions. Plugging it into the above Reload Timer Value formula gives: 
+Let's go with the previous example in chapter \ref{chp:TimersFcpu}: a .5Hz flasher, using a 1MHz clock and a prescale of 64. We found the timer count to be 15625 for those conditions. Plugging it into the above Reload Timer Value formula gives:
 
 \begin{displaymath}
 \begin{array}{rcl}
@@ -1241,7 +1244,7 @@ ISR(TIMER1_OVF_vect)
 {
    PORTB ^= (1 << 0); // Toggle the LED
    // TODO: Reload timer with precalculated value
-} 
+}
 \end{lstlisting}
 \end{center}
 
@@ -1275,7 +1278,7 @@ ISR(TIMER1_OVF_vect)
 {
    PORTB ^= (1 << 0); // Toggle the LED
    TCNT1  = 49911; // Reload timer with precalculated value
-} 
+}
 \end{lstlisting}
 \end{center}
 

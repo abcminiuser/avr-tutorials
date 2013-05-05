@@ -270,10 +270,7 @@ However, as we've just altered the prescaler term, the latter half is now differ
 Or, rearranged:
 
 \begin{displaymath}
-\begin{array}{rcl}
-\text{Target Timer Count} & = & (\frac{\text{Input Frequency}}{\text{Prescale} \times \text{Target Frequency}}) - 1 \\[6pt]
-                          & = & (\frac{\text{Input Frequency}}{\text{Prescale} \times \text{Target Frequency}}) - 1
-\end{array}
+\text{Target Timer Count} = (\frac{\text{Input Frequency}}{\text{Prescale} \times \text{Target Frequency}}) - 1
 \end{displaymath}
 
 Now, we want to see if there is a prescaler value which will give an \textit{exact} delay of 1Hz. One Hertz is equal to one cycle per second, so we want our compare value to be one second long, or 1000000uS. Let's divide that by each of our resolutions and put the results in a different table:

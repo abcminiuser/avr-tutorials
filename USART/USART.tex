@@ -92,7 +92,7 @@ There, we're almost done setting up the USART already! The last thing to set for
 The baud rate register is 16-bit, split into two 8-bit registers as is the case with all 16-bit registers in the AVR device family. To set our baud rate prescaler value, we first need to determine it. Note that the baud rate register value is \textbf{not} the same as the baud rate you wish to use --- this is a common point of failure amongst those new to the serial peripheral. Instead, the value must be derived from the following formula:
 
 \begin{displaymath}
-    \text{BaudValue} = (((\text{F\subscript{cpu}} / (\text{USART\_BAUDRATE} * 16))) - 1)
+    \text{BaudValue} = (((\text{F\subscript{cpu}} / (\text{USART\_BAUDRATE} \times 16))) - 1)
 \end{displaymath}
 
 Where \emph{F\subscript{cpu}} is your AVR's system clock frequency (in Hz), and \emph{USART\_BAUDRATE} is the desired communication baud rate.
@@ -101,8 +101,8 @@ Given my example project using a system clock of 7372800Hz and a baud rate of 96
 
 \begin{displaymath}
 \begin{array}{rcl}
-    \text{BaudValue} & = & (((\text{F\subscript{cpu}} / (\text{USART\_BAUDRATE} * 16))) - 1) \\
-    \text{BaudValue} & = & (7372800 / (9600 * 16) - 1) \\
+    \text{BaudValue} & = & (((\text{F\subscript{cpu}} / (\text{USART\_BAUDRATE} \times 16))) - 1) \\
+    \text{BaudValue} & = & (7372800 / (9600 \times 16) - 1) \\
     \text{BaudValue} & = & (7372800 / 153600 - 1) \\
     \text{BaudValue} & = & (48 - 1) \\
     \text{BaudValue} & = & 47 \\
@@ -254,7 +254,7 @@ int main (void)
 
       while ((UCSRA & (1 << UDRE)) == 0) {}; // Do nothing until UDR is ready for more data to be written to it
       UDR = ReceivedByte; // Echo back the received byte back to the computer
-   }   
+   }
 }
 \end{lstlisting}
 \end{center}

@@ -64,7 +64,7 @@ First off, you need to enable both the USART's transmission and reception circui
 
 int main (void)
 {
-   UCSRB |= (1 << RXEN) | (1 << TXEN); // Turn on the transmission and reception circuitry
+   UCSRB = (1 << RXEN) | (1 << TXEN); // Turn on the transmission and reception circuitry
 }
 \end{lstlisting}
 \end{center}
@@ -81,8 +81,8 @@ Let's look at how our code looks right now.
 
 int main (void)
 {
-   UCSRB |= (1 << RXEN) | (1 << TXEN);   // Turn on the transmission and reception circuitry
-   UCSRC |= (1 << URSEL) | (1 << UCSZ0) | (1 << UCSZ1); // Use 8-bit character sizes - URSEL bit set to select the UCRSC register
+   UCSRB = (1 << RXEN) | (1 << TXEN);   // Turn on the transmission and reception circuitry
+   UCSRC = (1 << URSEL) | (1 << UCSZ0) | (1 << UCSZ1); // Use 8-bit character sizes - URSEL bit set to select the UCRSC register
 }
 \end{lstlisting}
 \end{center}
@@ -194,8 +194,8 @@ Next, our USART initializing sequence:
 
 int main (void)
 {
-   UCSRB |= (1 << RXEN) | (1 << TXEN);   // Turn on the transmission and reception circuitry
-   UCSRC |= (1 << URSEL) | (1 << UCSZ0) | (1 << UCSZ1); // Use 8-bit character sizes
+   UCSRB = (1 << RXEN) | (1 << TXEN);   // Turn on the transmission and reception circuitry
+   UCSRC = (1 << URSEL) | (1 << UCSZ0) | (1 << UCSZ1); // Use 8-bit character sizes
 
    UBRRH = (BAUD_PRESCALE >> 8); // Load upper 8-bits of the baud rate value into the high byte of the UBRR register
    UBRRL = BAUD_PRESCALE; // Load lower 8-bits of the baud rate value into the low byte of the UBRR register
@@ -214,8 +214,8 @@ Now, an infinite loop to contain our echo code:
 
 int main (void)
 {
-   UCSRB |= (1 << RXEN) | (1 << TXEN);   // Turn on the transmission and reception circuitry
-   UCSRC |= (1 << URSEL) | (1 << UCSZ0) | (1 << UCSZ1); // Use 8-bit character sizes
+   UCSRB = (1 << RXEN) | (1 << TXEN);   // Turn on the transmission and reception circuitry
+   UCSRC = (1 << URSEL) | (1 << UCSZ0) | (1 << UCSZ1); // Use 8-bit character sizes
 
    UBRRH = (BAUD_PRESCALE >> 8); // Load upper 8-bits of the baud rate value into the high byte of the UBRR register
    UBRRL = BAUD_PRESCALE; // Load lower 8-bits of the baud rate value into the low byte of the UBRR register
@@ -241,8 +241,8 @@ int main (void)
 {
    char ReceivedByte;
 
-   UCSRB |= (1 << RXEN) | (1 << TXEN);   // Turn on the transmission and reception circuitry
-   UCSRC |= (1 << URSEL) | (1 << UCSZ0) | (1 << UCSZ1); // Use 8-bit character sizes
+   UCSRB = (1 << RXEN) | (1 << TXEN);   // Turn on the transmission and reception circuitry
+   UCSRC = (1 << URSEL) | (1 << UCSZ0) | (1 << UCSZ1); // Use 8-bit character sizes
 
    UBRRH = (BAUD_PRESCALE >> 8); // Load upper 8-bits of the baud rate value into the high byte of the UBRR register
    UBRRL = BAUD_PRESCALE; // Load lower 8-bits of the baud rate value into the low byte of the UBRR register

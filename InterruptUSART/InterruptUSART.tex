@@ -37,8 +37,8 @@ int main (void)
 {
    char ReceivedByte;
 
-   UCSRB |= (1 << RXEN) | (1 << TXEN);   // Turn on the transmission and reception circuitry
-   UCSRC |= (1 << URSEL) | (1 << UCSZ0) | (1 << UCSZ1); // Use 8-bit character sizes
+   UCSRB = (1 << RXEN) | (1 << TXEN);   // Turn on the transmission and reception circuitry
+   UCSRC = (1 << URSEL) | (1 << UCSZ0) | (1 << UCSZ1); // Use 8-bit character sizes
 
    UBRRH = (BAUD_PRESCALE >> 8); // Load upper 8-bits of the baud rate value into the high byte of the UBRR register
    UBRRL = BAUD_PRESCALE; // Load lower 8-bits of the baud rate value into the low byte of the UBRR register
@@ -50,7 +50,7 @@ int main (void)
 
       while ((UCSRA & (1 << UDRE)) == 0) {}; // Do nothing until UDR is ready for more data to be written to it
       UDR = ReceivedByte; // Echo back the received byte back to the computer
-   }   
+   }
 }
 \end{lstlisting}
 \end{center}
@@ -106,8 +106,8 @@ int main (void)
 {
    char ReceivedByte;
 
-   UCSRB |= (1 << RXEN) | (1 << TXEN);   // Turn on the transmission and reception circuitry
-   UCSRC |= (1 << URSEL) | (1 << UCSZ0) | (1 << UCSZ1); // Use 8-bit character sizes
+   UCSRB = (1 << RXEN) | (1 << TXEN);   // Turn on the transmission and reception circuitry
+   UCSRC = (1 << URSEL) | (1 << UCSZ0) | (1 << UCSZ1); // Use 8-bit character sizes
 
    UBRRH = (BAUD_PRESCALE >> 8); // Load upper 8-bits of the baud rate value into the high byte of the UBRR register
    UBRRL = BAUD_PRESCALE; // Load lower 8-bits of the baud rate value into the low byte of the UBRR register
@@ -119,7 +119,7 @@ int main (void)
 
       while ((UCSRA & (1 << UDRE)) == 0) {}; // Do nothing until UDR is ready for more data to be written to it
       UDR = ReceivedByte; // Echo back the received byte back to the computer
-   }   
+   }
 }
 
 ISR(USART_RXC_vect)
@@ -182,8 +182,8 @@ Let's take a look at the latest incarnation of our test code:
 
 int main (void)
 {
-   UCSRB |= (1 << RXEN) | (1 << TXEN);   // Turn on the transmission and reception circuitry
-   UCSRC |= (1 << URSEL) | (1 << UCSZ0) | (1 << UCSZ1); // Use 8-bit character sizes
+   UCSRB = (1 << RXEN) | (1 << TXEN);   // Turn on the transmission and reception circuitry
+   UCSRC = (1 << URSEL) | (1 << UCSZ0) | (1 << UCSZ1); // Use 8-bit character sizes
 
    UBRRH = (BAUD_PRESCALE >> 8); // Load upper 8-bits of the baud rate value into the high byte of the UBRR register
    UBRRL = BAUD_PRESCALE; // Load lower 8-bits of the baud rate value into the low byte of the UBRR register
@@ -191,7 +191,7 @@ int main (void)
    for (;;) // Loop forever
    {
          // Do nothing - echoing is handled by the ISR instead of in the main loop
-   }   
+   }
 }
 
 ISR(USART_RXC_vect)
@@ -256,8 +256,8 @@ Now we have a working interrupt driven serial example:
 
 int main (void)
 {
-   UCSRB |= (1 << RXEN) | (1 << TXEN);   // Turn on the transmission and reception circuitry
-   UCSRC |= (1 << URSEL) | (1 << UCSZ0) | (1 << UCSZ1); // Use 8-bit character sizes
+   UCSRB = (1 << RXEN) | (1 << TXEN);   // Turn on the transmission and reception circuitry
+   UCSRC = (1 << URSEL) | (1 << UCSZ0) | (1 << UCSZ1); // Use 8-bit character sizes
 
    UBRRH = (BAUD_PRESCALE >> 8); // Load upper 8-bits of the baud rate value into the high byte of the UBRR register
    UBRRL = BAUD_PRESCALE; // Load lower 8-bits of the baud rate value into the low byte of the UBRR register
@@ -268,7 +268,7 @@ int main (void)
    for (;;) // Loop forever
    {
          // Do nothing - echoing is handled by the ISR instead of in the main loop
-   }   
+   }
 }
 
 ISR(USART_RXC_vect)
@@ -286,6 +286,6 @@ Interrupts allow for infrequent ``background'' tasks to be executed when they oc
 
 Interrupts should be made to be as short as possible in execution time. This is because while one ISR is executing, others are blocked and thus if another ISR condition occurs while one ISR is executing, that ISR event will be missed or delayed.
 
-Because of this, communication ISRs are generally made short by receiving in characters via an ISR, and placing them into a buffer which the main code may read at its leisure. This ensures that received data will not be missed, while giving the main program time to complete what it is currently doing before having to process the input. Similarly, long transmissions may be made by placing the data to be sent into a buffer, and have an interrupt send the data as the hardware is ready while the main program performs other tasks. 
+Because of this, communication ISRs are generally made short by receiving in characters via an ISR, and placing them into a buffer which the main code may read at its leisure. This ensures that received data will not be missed, while giving the main program time to complete what it is currently doing before having to process the input. Similarly, long transmissions may be made by placing the data to be sent into a buffer, and have an interrupt send the data as the hardware is ready while the main program performs other tasks.
 
 \end{document}

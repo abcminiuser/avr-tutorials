@@ -225,7 +225,7 @@ const char MenuItem1[] PROGMEM = "Menu Item 1";
 const char MenuItem2[] PROGMEM = "Menu Item 2";
 const char MenuItem3[] PROGMEM = "Menu Item 3";
 
-const char* MenuItemPointers[] = {MenuItem1, MenuItem2, MenuItem3};
+const char* const MenuItemPointers[] = {MenuItem1, MenuItem2, MenuItem3};
 
 void main(void)
 {
@@ -252,7 +252,7 @@ const char MenuItem1[] PROGMEM = "Menu Item 1";
 const char MenuItem2[] PROGMEM = "Menu Item 2";
 const char MenuItem3[] PROGMEM = "Menu Item 3";
 
-const char* MenuItemPointers[] PROGMEM = {MenuItem1, MenuItem2, MenuItem3};
+const char* const MenuItemPointers[] PROGMEM = {MenuItem1, MenuItem2, MenuItem3};
 
 void main(void)
 {
@@ -283,7 +283,7 @@ const char MenuItem1[] PROGMEM = "Menu Item 1";
 const char MenuItem2[] PROGMEM = "Menu Item 2";
 const char MenuItem3[] PROGMEM = "Menu Item 3";
 
-const char* MenuItemPointers[] PROGMEM = {MenuItem1, MenuItem2, MenuItem3};
+const char* const MenuItemPointers[] PROGMEM = {MenuItem1, MenuItem2, MenuItem3};
 
 void main(void)
 {
@@ -310,7 +310,7 @@ const char MenuItem1[] PROGMEM = "Menu Item 1";
 const char MenuItem2[] PROGMEM = "Menu Item 2";
 const char MenuItem3[] PROGMEM = "Menu Item 3";
 
-const char* MenuItemPointers[] PROGMEM = {MenuItem1, MenuItem2, MenuItem3};
+const char* const MenuItemPointers[] PROGMEM = {MenuItem1, MenuItem2, MenuItem3};
 
 void main(void)
 {
@@ -333,8 +333,8 @@ Finally, let's cover another advanced use case of \lstinline{PROGMEM} strings; p
 
 \begin{center}
 \begin{lstlisting}
-char ParameterA = "Parameter A";
-char ParameterB = "Parameter B";
+char ParameterA[] = "Parameter A";
+char ParameterB[] = "Parameter B";
 
 void PrintParameterValue(char* ParameterName, uint8_t ParameterValue)
 {
@@ -359,8 +359,8 @@ As we have done before, let's modify the code so that our fixed-strings \lstinli
 
 \begin{center}
 \begin{lstlisting}
-const char ParameterA PROGMEM = "Parameter A";
-const char ParameterB PROGMEM = "Parameter B";
+const char ParameterA[] PROGMEM = "Parameter A";
+const char ParameterB[] PROGMEM = "Parameter B";
 
 void PrintParameterValue(const char* ParameterName, uint8_t ParameterValue)
 {
@@ -375,8 +375,8 @@ To fix up our code, we need to yet-again consult the \textit{avr-libc} manual, w
 
 \begin{center}
 \begin{lstlisting}
-const char ParameterA PROGMEM = "Parameter A";
-const char ParameterB PROGMEM = "Parameter B";
+const char ParameterA[] PROGMEM = "Parameter A";
+const char ParameterB[] PROGMEM = "Parameter B";
 
 void PrintParameterValue(const char* ParameterName, uint8_t ParameterValue)
 {

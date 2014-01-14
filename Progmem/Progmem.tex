@@ -69,7 +69,7 @@ LCD_puts(PSTR("Program Memory String"));
 \end{lstlisting}
 \end{center}
 
-This stops you from having to clutter your program up with hundreds of variables which hold one-time-used strings. The downside to using the PSTR macro rather than a \lstinline{PROGMEM} modified string variable is that you can only use it within functions - you can't use it as a global variable initializer. Also be aware that the compiler treats all \lstinline{PSTR()} declared strings as being completely seperate to one-another, so declaring the same string contents in multiple places will waste extra program FLASH memory. If you find yourself using the same string multiple times in your application, use a globally declared \lstinline{PROGMEM} string instead.
+This stops you from having to clutter your program up with hundreds of variables which hold one-time-used strings. The downside to using the PSTR macro rather than a \lstinline{PROGMEM} modified string variable is that you can only use it within functions - you can't use it as a global variable initializer. Also be aware that the compiler treats all \lstinline{PSTR()} declared strings as being completely separate to one-another, so declaring the same string contents in multiple places will waste extra program FLASH memory. If you find yourself using the same string multiple times in your application, use a globally declared \lstinline{PROGMEM} string instead.
 
 However, we now have a problem --- now all your code doesn't work! What's wrong?
 
@@ -103,7 +103,7 @@ void USART_TxString(const char *data)
 
 This relies on the routine \lstinline{USART_Tx()}, which for the purposes of this example we will assume to be predefined as a function which transmits a single passed character through the AVR's USART. Now, how do we change our routine to use a \lstinline{PROGMEM} string?
 
-The \lstinline{pgmspace.h} headed exposes a macro which is important for \lstinline{PROGMEM}-aware routines; \lstinline{pgm_read_byte()}. This macro takes a \lstinline{PROGMEM} pointer as its argument, and returns the byte located at that pointer value. To mark that our new routine deals in \lstinline{PROGMEM} strings, let's append a ``\lstinline{_P}'' to it's name just like the other routines in \lstinline{pgmspace.h}:
+The \lstinline{pgmspace.h} header exposes a macro which is important for \lstinline{PROGMEM}-aware routines; \lstinline{pgm_read_byte()}. This macro takes a \lstinline{PROGMEM} pointer as its argument, and returns the byte located at that pointer value. To mark that our new routine deals in \lstinline{PROGMEM} strings, let's append a ``\lstinline{_P}'' to it's name just like the other routines in \lstinline{pgmspace.h}:
 
 \begin{center}
 \begin{lstlisting}
@@ -178,7 +178,7 @@ Note that we are taking the address of the fourth element of \lstinline{LCD_SegT
 
 It's hard to remember that there is a layer of abstraction between flash memory access --- unlike RAM variables we can't just reference the contents at will without macros to manage the separate memory space --- macros such as \lstinline{prgm_read_byte()}. But when it all really starts confusing is when you have to deal with pointers to \lstinline{PROGMEM} strings which are also held in \lstinline{PROGMEM}.
 
-Why could this possibly be useful you ask? Well, i'll start as usual with a short example.
+Why could this possibly be useful you ask? Well, I'll start as usual with a short example.
 
 \begin{center}
 \begin{lstlisting}
@@ -329,7 +329,7 @@ I recommend looking through the \textit{avr-libc} documentation of the \lstinlin
 
 \section{PROGMEM Strings and \texttt{printf()}}
 
-Finally, let's cover another advanced use case of \lstinline{PROGMEM} strings; printing them out using the C string formatting library function \lstinline{printf()}. Not everyone is a fan of the string formatting functions located in the C standard library's \lstinline{<stdio.h>} header due to their large size and slow execution speed, but they can make complex applications quite a bit simpler if your can stomache the size/performance penalties. Lots of applications will typically contain code that looks something like this:
+Finally, let's cover another advanced use case of \lstinline{PROGMEM} strings; printing them out using the C string formatting library function \lstinline{printf()}. Not everyone is a fan of the string formatting functions located in the C standard library's \lstinline{<stdio.h>} header due to their large size and slow execution speed, but they can make complex applications quite a bit simpler if you can stomache the size/performance penalties. Lots of applications will typically contain code that looks something like this:
 
 \begin{center}
 \begin{lstlisting}
@@ -371,7 +371,7 @@ void PrintParameterValue(const char* ParameterName, uint8_t ParameterValue)
 
 This application now compiles, but running it will produce incorrect output. Once again, we have the problem of a function (in this case, the \textit{avr-libc} provided \lstinline{printf()}) expecting a string that is located in RAM, while we're instead passing it a string located in FLASH. In the C language specification for the \lstinline{printf()} function a number of special formatting strings (that's the \lstinline{%s}, \lstinline{%d}, \lstinline{%g}, etc. that tells the function how to format the input parameters) are defined, but no specification was made to deal with multiple memory spaces. This isn't so suprising when you consider the origins of C and its single-memory space model, but it's a problem for us nonetheless.
 
-To fix up our code, we need to yet-again consult the \textit{avr-libc} manual, where we will find that the library implementors have helpfully provided some special extensions to the standard \lstinline{printf()} function - specifically, there's a non-standard \lstinline{%S} -- note the capitol ``S''! -- format specifier which tells the function the source string is located in \lstinline{PROGMEM}. Changing our format string to use \lstinline{%S} instead of the previous \lstinline{%s} fixes the application and allows us to merrily print out strings from either RAM or FLASH in our code using \lstinline{printf()}, \lstinline{sprintf()} and its related functions.
+To fix up our code, we need to yet-again consult the \textit{avr-libc} manual, where we will find that the library implementors have helpfully provided some special extensions to the standard \lstinline{printf()} function - specifically, there's a non-standard \lstinline{%S} -- note the capital ``S''! -- format specifier which tells the function the source string is located in \lstinline{PROGMEM}. Changing our format string to use \lstinline{%S} instead of the previous \lstinline{%s} fixes the application and allows us to merrily print out strings from either RAM or FLASH in our code using \lstinline{printf()}, \lstinline{sprintf()} and its related functions.
 
 \begin{center}
 \begin{lstlisting}

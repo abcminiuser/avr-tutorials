@@ -162,7 +162,7 @@ static unsigned int LCD_SegTable[] PROGMEM =
 
 Because we've added the \lstinline{PROGMEM} attribute, the table is now stored firmly in flash memory. The overall savings for a table this size is negligible, but in a practical application the data to be stored may be many times the size shown here --- and without the \lstinline{PROGMEM} attribute, all that will be copied into RAM.
 
-First thing to notice here is that the table data is of the type \lstinline{unsigned int}. This means that our data is two bytes long (for the AVR), and so our \lstinline{prgm_read_byte()} macro won't suffice for this instance.
+First thing to notice here is that the table data is of the type \lstinline{unsigned int}. This means that our data is two bytes long (for the AVR), and so our \lstinline{pgm_read_byte()} macro won't suffice for this instance.
 
 Thankfully, another macro exists; \lstinline{pgm_read_word()}. A word for the AVR is two bytes long --- the same size as an \lstinline{int}. Because of this fact, we can now make use of it to read out our table data. If we wanted to grab the fifth element of the array, the following extract would complete this purpose:
 
@@ -176,7 +176,7 @@ Note that we are taking the address of the fourth element of \lstinline{LCD_SegT
 
 \section{PROGMEM Pointers}
 
-It's hard to remember that there is a layer of abstraction between flash memory access --- unlike RAM variables we can't just reference the contents at will without macros to manage the separate memory space --- macros such as \lstinline{prgm_read_byte()}. But when it all really starts confusing is when you have to deal with pointers to \lstinline{PROGMEM} strings which are also held in \lstinline{PROGMEM}.
+It's hard to remember that there is a layer of abstraction between flash memory access --- unlike RAM variables we can't just reference the contents at will without macros to manage the separate memory space --- macros such as \lstinline{pgm_read_byte()}. But when it all really starts confusing is when you have to deal with pointers to \lstinline{PROGMEM} strings which are also held in \lstinline{PROGMEM}.
 
 Why could this possibly be useful you ask? Well, I'll start as usual with a short example.
 

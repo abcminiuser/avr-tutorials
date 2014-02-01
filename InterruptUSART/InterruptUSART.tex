@@ -280,9 +280,9 @@ ISR(USART_RXC_vect)
 \end{lstlisting}
 \end{center}
 
-Which, like out original program, will echo characters received via the USART. However, because our program is now interrupt driven, we can add in code into the main loop which will be executed when data is not received --- such as flashing a LED.
+Which, like our original program, will echo characters received via the USART. However, because our program is now interrupt driven, we can add in code into the main loop which will be executed when data is not received --- such as flashing a LED.
 
-Interrupts allow for infrequent ``background'' tasks to be executed when they occur, without posing a run-time penalty of having to poll the hardware until the even occurs. This frees up our main loop to take care of the critical code, with the interrupt code pausing the main code to execute when the event of interest ocurs.
+Interrupts allow for infrequent ``background'' tasks to be executed when they occur, without posing a run-time penalty of having to poll the hardware until the even occurs. This frees up our main loop to take care of the critical code, with the interrupt code pausing the main code to execute when the event of interest occurs.
 
 Interrupts should be made to be as short as possible in execution time. This is because while one ISR is executing, others are blocked and thus if another ISR condition occurs while one ISR is executing, that ISR event will be missed or delayed.
 

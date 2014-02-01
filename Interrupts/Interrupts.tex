@@ -59,7 +59,7 @@ Hardware interrupts can be useful to process sparingly occurring events, such as
 
 
 \label{chp:DefISR}
-\chapter{So how to we define an ISR?}
+\chapter{So how do we define an ISR?}
 
 How we do interrupts varies between programming languages, but at the lowest level, we are simply making a general AVR function somewhere in the AVR's FLASH memory space, and ``linking'' it to a specific interrupt source by placing a JMP or RJMP instruction to this function at the address specified in the table we just looked at. At the start of the AVR's FLASH memory space lies the Interrupt Vector Table, which is simply a set of hardwired addresses which the AVR's processor will jump to when each of the interrupts fire. By placing a jump instruction at each interrupt's address in the table, we can make the AVR processor jump to our ISR which lies elsewhere.
 

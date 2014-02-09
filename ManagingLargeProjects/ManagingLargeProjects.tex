@@ -30,7 +30,7 @@ ProcessByte()
 Beep()
 EnableUSART()
 SleepMode()
-CheckADCChanel()
+CheckADCChannel()
 \end{lstlisting}
 \end{center}
 
@@ -60,7 +60,7 @@ Beep()
 ADC.c
 \begin{center}
 \begin{lstlisting}
-CheckADCChanel()
+CheckADCChannel()
 CheckTempSensorVal()
 \end{lstlisting}
 \end{center}
@@ -116,11 +116,11 @@ SRC = $(TARGET).c \
 
 \section{Naming the routines}
 
-One problem with our multi-file setup remains; routines are still hard to find across the files. One might easily identify the file location of our mythical \texttt{CheckADCChanel()} routine, but what about \texttt{SleepMode()}? Obviously a naming convention becomes important.
+One problem with our multi-file setup remains; routines are still hard to find across the files. One might easily identify the file location of our mythical \texttt{CheckADCChannel()} routine, but what about \texttt{SleepMode()}? Obviously a naming convention becomes important.
 
 Now, this is where it gets tricky. There's really no set standard for function names, and every one prefers something different. It is important to choose which one you prefer, but it is ten times more important to remain consistent in your scheme across your entire project.
 
-The first word, symbol or acronym in your function name should indicate the file it is located in. For example, all the ADC functions will have ``ADC'' at their start, and all the speaker-related functions in \texttt{Speaker.c} would have ``Speaker'' at their start. You can eliminate repetition in a name as it becomes self-explanatory what the function is referring to due to the prefix --- thus \texttt{CheckADCChanel()} would become \texttt{ADCCheckChannel()} (or similar), rather than the superfluous \texttt{ADCCheckADCChanel()}.
+The first word, symbol or acronym in your function name should indicate the file it is located in. For example, all the ADC functions will have ``ADC'' at their start, and all the speaker-related functions in \texttt{Speaker.c} would have ``Speaker'' at their start. You can eliminate repetition in a name as it becomes self-explanatory what the function is referring to due to the prefix --- thus \texttt{CheckADCChannel()} would become \texttt{ADCCheckChannel()} (or similar), rather than the superfluous \texttt{ADCCheckADCChannel()}.
 
 I'll use our example again and put here a possible function naming scheme. Note that the \texttt{main()} function's name remains unchanged as it is mandated by the C standard:
 
@@ -145,7 +145,7 @@ SpeakerBeep()
 ADC.c
 \begin{center}
 \begin{lstlisting}
-ADCCheckChanel()
+ADCCheckChannel()
 ADCCheckTempSensorVal()
 \end{lstlisting}
 \end{center}
@@ -220,7 +220,7 @@ void      ProcessByte(USARTByte);
 void      Beep(void);
 void      EnableUSART(void);
 void      SleepMode(void);
-int       CheckADCChanel(char);
+int       CheckADCChannel(char);
 \end{lstlisting}
 \end{center}
 
@@ -251,7 +251,7 @@ ADC.h
 \begin{lstlisting}
 #define ADCTempSenseChannel 5
 
-int ADCCheckChanel(char);
+int ADCCheckChannel(char);
 int ADCCheckTempSensorVal(void);
 \end{lstlisting}
 \end{center}
@@ -428,7 +428,7 @@ ADC.h
 
 #define ADC_TEMPSENSORCHANNEL 5
 
-int ADCCheckChanel(char);
+int ADCCheckChannel(char);
 int ADCCheckTempSensorVal(void);
 
 #endif
@@ -453,6 +453,6 @@ void MainTurnOffStatusLed(void);
 \end{lstlisting}
 \end{center}
 
-Voila, we now have a separated, maintainable project! 
+Voila, we now have a separated, maintainable project!
 
 \end{document}

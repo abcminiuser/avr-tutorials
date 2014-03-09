@@ -477,7 +477,7 @@ Compile and run, and the LED should toggle once per minute. By extending this te
 
 Up until now, we've been dealing with the timers in a very basic way - starting them counting, then comparing in our main routine against a wanted value. This is rather inefficient - we waste cycles checking the timer's value every time the loop runs, and slightly inaccurate (as the timer may pass our wanted compare value slightly while processing the loop). What if there was a better way?
 
-Well, there is. The AVR timers usually incorporate a special function mode called "Clear Timer on Compare", or CTC for short. The CTC operating mode does in hardware what we've previously experimented in software; it compares in hardware the current timer value against the wanted value, and when the wanted value is reached a flag in a status register is set and the timer's value reset.
+Well, there is. The AVR timers usually incorporate a special function mode called ``Clear Timer on Compare'', or CTC for short. The CTC operating mode does in hardware what we've previously experimented in software; it compares in hardware the current timer value against the wanted value, and when the wanted value is reached a flag in a status register is set and the timer's value reset.
 
 This is extremely handy; because the comparing is done in hardware, all we have to worry about is checking the flag to determine when to execute our LED toggling - much faster than comparing bytes or (in the case of the 16-bit timer) several bytes.
 
@@ -530,7 +530,7 @@ int main (void)
 
 Now, we need to flesh out the skeleton code we have. First up we need to configure our timer for CTC mode. As you might be able to guess, we want to configure our timer, thus the bits we want will be located in the timer's Control registers. The table to look for is the one titled \emph{``Waveform Generation Mode Bit Description''}, and is located in the timer control register descriptions for each timer. This table indicates all the possible timer modes, the bits required to set the timer to use those modes, and the conditions each mode reacts to.
 
-You should note that our previous examples have ignored this table altogether, allowing it to use its default value of all mode bits set to zero. Looking at the table we can see that this setup corresponds to the "Normal" timer mode. We want to use the CTC mode of the timer, so let's look for a combination of control bits that will give us this mode.
+You should note that our previous examples have ignored this table altogether, allowing it to use its default value of all mode bits set to zero. Looking at the table we can see that this setup corresponds to the ``Normal'' timer mode. We want to use the CTC mode of the timer, so let's look for a combination of control bits that will give us this mode.
 
 Interestingly, it seems that two different combinations in Timer 1 of the ATMEGA16 will give us the same CTC behaviour we desire. Looking to the right of the table, we can see that the \texttt{TOP} value (that is, the maximum timer value for the mode, which corresponds to the compare value in CTC mode) uses different registers for each. Both modes behave in the same manner for our purposes and differ only by the register used to store the compare value, so we'll go with the first.
 
@@ -592,7 +592,7 @@ int main (void)
 \end{lstlisting}
 \end{center}
 
-There, almost done already! Last thing we need is a way of checking to see if the compare has occurred, and a way to clear the flag once its been set. The place to look for the compare flags is in the timer's Interrupt Flag register --- an odd place it seems, but the reason will become clear in the next section dealing with timer interrupts. The ATMEGA16's Timer 1 interrupt flags are located in the combined register \texttt{TIFR}, and the flag we are interested in is the ``Output Compare A Match'' flag, \texttt{OCF1A}. Note the "A" on the end; Timer 1 on the ATMEGA16 has two CTC channels (named channel A and channel B), which can work independently. We're only using channel A for this experiment.
+There, almost done already! Last thing we need is a way of checking to see if the compare has occurred, and a way to clear the flag once its been set. The place to look for the compare flags is in the timer's Interrupt Flag register --- an odd place it seems, but the reason will become clear in the next section dealing with timer interrupts. The ATMEGA16's Timer 1 interrupt flags are located in the combined register \texttt{TIFR}, and the flag we are interested in is the ``Output Compare A Match'' flag, \texttt{OCF1A}. Note the ``A'' on the end; Timer 1 on the ATMEGA16 has two CTC channels (named channel A and channel B), which can work independently. We're only using channel A for this experiment.
 
 Checking for a CTC event involves checking the \texttt{OCF1A} flag in this register. That's easy - but what about clearing it? The datasheet includes an interesting note on the subject:
 

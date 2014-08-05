@@ -46,7 +46,7 @@ To start off, we will deal with basic timer functionality and move on from there
 \label{chp:TimersFcpu}
 \chapter{Timers running at Fcpu}
 
-We'll start with a simple example. We'll create a simple program to flash a LED at about 10Hz. Simple, right? Making a LED blink at 10Hz requires us to both turn it on and off again, so we need to perform a toggle of the LED's output state every 1/20th of a second.
+We'll start with a simple example. We'll create a simple program to flash a LED at about 10Hz. Simple, right? Making a LED blink at 10Hz requires us to both turn it on and off again, so we need to perform a toggle of the LED's output state every \(\frac{1}{20}\)th of a second.
 
 First, let's look at the pseudocode required to drive this example:
 
@@ -118,7 +118,7 @@ As the name suggests, an 8 bit timer stores its value as an eight bit value in i
 
 Our project needs a fairly long delay, of \(\frac{1}{20}\) of a second. That's quite short to us humans, but to a microcontroller capable of millions of instructions per second it's a long time indeed!
 
-Our timer will be running at the same clock speed as the AVR core to start with, so we know that the frequency is 1MHz. One MHz is \(\frac{1}{1000000}\) of a second, so for each clock of the timer only one millionth of a second has elapsed! Our target is \(\frac{1}{20}\) of a second, so let's calculate the number of timer periods needed to reach this delay:
+Our timer will be running at the same clock speed as the AVR core to start with, so we know that the frequency is 1MHz. One Megahertz is \(\frac{1}{1000000}\) of a second, so for each clock of the timer only one millionth of a second has elapsed! Our target is \(\frac{1}{20}\) of a second, so let's calculate the number of timer periods needed to reach this delay:
 
 \begin{displaymath}
 \begin{array}{rcl}
@@ -224,11 +224,11 @@ Next, we'll learn about the prescaler so we can try to slow things down a bit.
 \label{chp:PrescaledTimers}
 \chapter{Prescaled Timers}
 
-In chapter \ref{chp:TimersFcpu} of this tutorial we learned how to set up our 16-bit timer 1 for a 1/20 second delay. This short (to us humans) delay is actually quite long to our AVR - 50,000 cycles in fact at 1MHz. Notice that Timer 1 can only hold a value of 0-65535 - and we've almost reached that! What do we do if we want a longer delay?
+In chapter \ref{chp:TimersFcpu} of this tutorial we learned how to set up our 16-bit timer 1 for a \(\frac{1}{20}\) second delay. This short (to us humans) delay is actually quite long to our AVR - 50,000 cycles in fact at 1MHz. Notice that Timer 1 can only hold a value of 0-65535 - and we've almost reached that! What do we do if we want a longer delay?
 
 One of the easiest things we can do is to use the timer's prescaler, to trade resolution for duration. The timer prescaler is a piece of timer circuitry which allows us to divide up the incoming clock signal by a power of 2, reducing the resolution (as we can only count in \(2^n\) cycle blocks) but giving us a longer timer range.
 
-Let's try to prescale down our Fcpu clock so we can reduce the timer value and reduce our delay down to a nice 1Hz. The Timer 1 prescaler on the ATMEGA16 has divide values of 1, 8, 64, 256 and 1024 - so let's re-do our calculations and see if we can find an exact value.
+Let's try to prescale down our F\subscript{cpu} clock so we can reduce the timer value and reduce our delay down to a nice 1Hz. The Timer 1 prescaler on the ATMEGA16 has divide values of 1, 8, 64, 256 and 1024 - so let's re-do our calculations and see if we can find an exact value.
 
 Our calculations for our new timer value are exactly the same as before, except we now have a new prescaler term. We'll look at our minimum resolution for each first:
 
@@ -239,18 +239,18 @@ Our calculations for our new timer value are exactly the same as before, except 
 \end{array}
 \end{displaymath}
 
-For a 1MHz clock, we can construct a table of resolutions using the available prescaler values and a Fcpu of 1MHz.
+For a 1MHz clock, we can construct a table of resolutions using the available prescaler values and a F\subscript{cpu} of 1MHz.
 
 \begin{center}
 \begin{tabular}{|l|l|}
 	\hline
-	Prescaler Value & Resolution @ 1MHz \\
+	Prescaler Value & Resolution @ \SI{1}{\mega\hertz} \\
 	\hline
-	1               & 1uS    \\
-	8               & 8uS    \\
-	64              & 64uS   \\
-	256             & 256uS  \\
-	1024            & 1024uS \\
+	1               & \SI{1}{\micro\second}    \\
+	8               & \SI{8}{\micro\second}    \\
+	64              & \SI{64}{\micro\second}   \\
+	256             & \SI{256}{\micro\second}  \\
+	1024            & \SI{1024}{\micro\second} \\
 	\hline
 \end{tabular}
 \end{center}
@@ -319,7 +319,7 @@ int main (void)
 \end{lstlisting}
 \end{center}
 
-Note I've removed the timer setup line, as it is no longer valid. We want to set up our timer to run at Fcpu/64 now. To do this, we need to look at the datasheet of the ATMEGA16 to see which bits need to be set in which control registers.
+Note I've removed the timer setup line, as it is no longer valid. We want to set up our timer to run at \(\frac{1}{\text{F\subscript{cpu}}\times{64}}\) now. To do this, we need to look at the datasheet of the ATMEGA16 to see which bits need to be set in which control registers.
 
 Checking indicates that we need to set both the \texttt{CS10} and \texttt{CS11} prescaler bits in \texttt{TCCR1B}, so let's add that to our program:
 
@@ -564,7 +564,7 @@ int main (void)
 \end{lstlisting}
 \end{center}
 
-The second task for this experiment is to set the compare value - the value that will reset the timer and set the CTC flag when reached by the timer. We know from the datasheet that the register for this is OCR1A for the MEGA16 in the first CTC timer mode, so all we need is a compare value. From our previous experiment we calculated that 1Hz at 1MHz with a prescaler of 64 needs a compare value of 15624, so let's go with that.
+The second task for this experiment is to set the compare value - the value that will reset the timer and set the CTC flag when reached by the timer. We know from the datasheet that the register for this is \texttt{OCR1A} for the MEGA16 in the first CTC timer mode, so all we need is a compare value. From our previous experiment we calculated that 1Hz at 1MHz with a prescaler of 64 needs a compare value of 15624, so let's go with that.
 
 \begin{center}
 \begin{lstlisting}
@@ -640,7 +640,7 @@ For all our previous experiments, we've been using a looped test in our main cod
 
 Interrupts are events that when enabled, cause the AVR to execute a special routine (called an Interrupt Service Routine, or ISR for short) when the interrupt conditions are met. These interrupts can happen at any time in the program's execution when global interrupts are enabled. When an enabled ISR's condition is met, the main routine is paused while the ISR executes. Once the ISR execution completes, the main routine is resumed until the next interrupt. This is useful for us, as it means we can eliminate the need to keep checking the timer value and just respond to its interrupt events instead.
 
-The AVR timers can have several different Interrupts - typically Overflow, Compare and Capture. Overflow occurs when the timer's value rolls past it's maximum and back to zero (for an 8 bit timer, that's when it counts past 11111111 in binary and resets back to 00000000). However, for this section we'll deal with the Compare interrupt, which occurs in CTC mode when the compare value is reached.
+The AVR timers can have several different Interrupts - typically Overflow, Compare and Capture. Overflow occurs when the timer's value rolls past its maximum and back to zero (for an 8 bit timer, that's when it counts past 11111111 in binary and resets back to 00000000). However, for this section we'll deal with the Compare interrupt, which occurs in CTC mode when the compare value is reached.
 
 Again, we'll pseudocode this to start with:
 
@@ -941,15 +941,15 @@ Simple, isn't it! We've now created the simplest (code-wise) LED flasher possibl
 
 Well, now that we've had fun creating a LED flasher via a variety of software and hardware CTC methods, we'll move on to one last LED flashing program. This time we'll be using a different Timer event to manage the toggling of the LED: the overflow.
 
-As previously stated, timers store their values into internal 8 or 16 bit registers, depending on the size of the timer being used. These registers can only store a finite number of values, resulting in the need to manage the timer (via prescaling, software extention, etc) so that the interval to be measured fits within the range of the chosen timer.
+As previously stated, timers store their values into internal 8 or 16 bit registers, depending on the size of the timer being used. These registers can only store a finite number of values, resulting in the need to manage the timer (via prescaling, software extension, etc) so that the interval to be measured fits within the range of the chosen timer.
 
 However, what has not been discussed yet is what happens when the range of the timer is exceeded. Does the AVR explode? Does the application crash? Does the timer automatically stop?
 
 The answer is simple, if rather boring. In the event of the timer register exceeding its capacity, it will automatically roll around back to zero and keep counting. When this occurs, we say that the timer has ``overflowed''.
 
-When an overflow occurs, a bit is set in one of the timer status registers to indicate to the main application that the event has occured. Just like with the CTC hardware, there is also a corresponding bit which can enable an interrupt to be fired each time the timer resets back to zero.
+When an overflow occurs, a bit is set in one of the timer status registers to indicate to the main application that the event has occurred. Just like with the CTC hardware, there is also a corresponding bit which can enable an interrupt to be fired each time the timer resets back to zero.
 
-So why would we need the overflow interrupt? Well, I leave that as an excersize to the reader. However, we can demonstrate it here in this tutorial --- via another LED flasher, of course!
+So why would we need the overflow interrupt? Well, I leave that as an exercise to the reader. However, we can demonstrate it here in this tutorial --- via another LED flasher, of course!
 
 Calculating the frequency of the flashing is a little different to our previous examples, as now we have to calculate in reverse (to find the frequency from the timer count and timer resolution rather than the timer count from a known frequency and timer resolution). We'll still be working with our 16-bit timer 1 for this example, to be consistent with previous chapters.
 
@@ -1167,9 +1167,9 @@ All done! This simple program will cause the LED to toggle each time the overflo
 
 One neat application of the overflow event is for creating a CTC timer on AVRs which don't support true hardware CTC. It's not as neat as the pure hardware CTC discussed in chapter \ref{chp:HWCTC}, but faster than the pure software CTC discussed in chapter \ref{chp:TimersFcpu}.
 
-CTC works by having a fixed \texttt{BOTTOM} value --- that's the timer's minimum value --- of zero, and a variable \texttt{TOP} value, the value at which resets the timer and fires the event. However, with the overflow event we seemingly have a fixed \texttt{BOTTOM} of again zero, and a fixed \texttt{TOP} of the maximum timer's value. Not so; using a small trick we can adjust the \texttt{BOTTOM} value to give us the equivelent of a CTC implementation standing on its head.
+CTC works by having a fixed \texttt{BOTTOM} value --- that's the timer's minimum value --- of zero, and a variable \texttt{TOP} value, the value at which resets the timer and fires the event. However, with the overflow event we seemingly have a fixed \texttt{BOTTOM} of again zero, and a fixed \texttt{TOP} of the maximum timer's value. Not so; using a small trick we can adjust the \texttt{BOTTOM} value to give us the equivalent of a CTC implementation standing on its head.
 
-This tecnique is called timer reloading. When configured, we preload the timer's count register (which is both readable and writeable) with a value above zero. This shortens the time interval before the next overflow event, although only for a single overflow. We can get around that by again reloading the timer's value to our non-zero value inside the overflow event for a hybrid software/hardware CTC.
+This technique is called timer reloading. When configured, we preload the timer's count register (which is both readable and writeable) with a value above zero. This shortens the time interval before the next overflow event, although only for a single overflow. We can get around that by again reloading the timer's value to our non-zero value inside the overflow event for a hybrid software/hardware CTC.
 
 Pseudocode time!
 
@@ -1245,7 +1245,7 @@ ISR(TIMER1_OVF_vect)
 \end{lstlisting}
 \end{center}
 
-Both the reloading and preloading of the timer takes identical code - we just need to set the timer's count register to the precalculated value. The timer's current count value is avaliable in the \texttt{TCNTx} register, where \textit{x} is the timer's number. We're using the 16-bit timer 1, so the count value is located in \texttt{TCNT1}.
+Both the reloading and preloading of the timer takes identical code - we just need to set the timer's count register to the precalculated value. The timer's current count value is available in the \texttt{TCNTx} register, where \textit{x} is the timer's number. We're using the 16-bit timer 1, so the count value is located in \texttt{TCNT1}.
 
 We'll now finish of the example, replacing the unfinished segments:
 

@@ -11,8 +11,8 @@
 \cleardoublepage
 
 
-\label{chp:WhatAreInts}
 \chapter{What are Interrupts?}
+\label{chp:WhatAreInts}
 
 One of the most fundamental and useful principles of modern embedded processors are interrupts. There seems to be a lot of confusion about interrupts; what are they, and how do we use them? In short, an interrupt is a way for an external (or, sometimes, internal) event to pause the current processor's activity, so that it can complete a brief task before resuming execution where it left off. Consider the following.
 
@@ -27,8 +27,8 @@ What we are doing is called asynchronous processing - that is, we are processing
 When correctly set up, we can link a specific interrupt source to a specific handler routine, called an \textit{Interrupt Service Routine}, or \textit{ISR} for short.
 
 
-\label{chp:InterruptCauses}
 \chapter{What can cause interrupts?}
+\label{chp:InterruptCauses}
 
 There are two main sources of interrupts:
 
@@ -58,8 +58,8 @@ This contains a complete list of all the possible interrupts in our AVR, giving 
 Hardware interrupts can be useful to process sparingly occurring events, such as buttons presses or alarm inputs. They can also be useful for situations where a low, fixed latency is required, for example when processing inputs from a rotary encoder.
 
 
-\label{chp:DefISR}
 \chapter{So how do we define an ISR?}
+\label{chp:DefISR}
 
 How we do interrupts varies between programming languages, but at the lowest level, we are simply making a general AVR function somewhere in the AVR's FLASH memory space, and ``linking'' it to a specific interrupt source by placing a JMP or RJMP instruction to this function at the address specified in the table we just looked at. At the start of the AVR's FLASH memory space lies the Interrupt Vector Table, which is simply a set of hardwired addresses which the AVR's processor will jump to when each of the interrupts fire. By placing a jump instruction at each interrupt's address in the table, we can make the AVR processor jump to our ISR which lies elsewhere.
 
@@ -105,8 +105,8 @@ Note that in the case of the assembly version, we need to add a \texttt{reti} in
 This raises the next point; \textbf{by default, on the AVR devices, interrupts are themselves not interruptible}. When an interrupt fires, the AVR CPU will automatically disable the Global Interrupt Enable bit, to prevent the ISR from being itself interrupted. This is to prevent stack overflows from too many interrupts occurring at once and to prevent the ISRs from running too long, as most uses of interrupts are to have minimal latency when processing an event. It's perfectly possible to set the Global Interrupt Enable bit again as part of the ISR so that nested interrupts can occur, but this is highly not recommended as it is dangerous.
 
 
-\label{chp:EnableInt}
 \chapter{Enabling a Specific Interrupt}
+\label{chp:EnableInt}
 
 If you simply add in an ISR to your existing program, you will find that it appears to do nothing when you try to fire it. This is because while we have defined an ISR, we haven't enabled the interrupt source! As mentioned in part 3, we need to meet all three criteria for the ISR to fire.
 
@@ -140,8 +140,8 @@ UCSRB |= (1 << RXCIE);
 That should be enough to make the AVR's execution jump to the appropriate ISR when the interrupt occurs.
 
 
-\label{chp:ImportantInfo}
 \chapter{Things you Need to Know}
+\label{chp:ImportantInfo}
 
 There are a few things to keep in mind when using interrupts in your program:
 
@@ -218,8 +218,8 @@ If two or more of the same interrupt event occurs while you are in the middle of
 This isn't always the case (some interrupt flags are cleared when a particular register is read, such as the USART receive complete flag), however, this is more of an exception to the rule. The upshot of this is that if you receive another interrupt to the source you are currently processing while in its ISR, you'll get another call to the ISR once the current one terminates. Again, you are still limited to a single ``event occurred'' flag for each interrupt, so you can miss interrupts if many happen at once before you have a chance to process them.
 
 
-\label{chp:FinalWords}
 \chapter{Putting it all together}
+\label{chp:FinalWords}
 
 Rather than waste my efforts by repeating what I've already done before here, I will instead direct readers to my previous tutorial on Interrupt Driven USART Communications for a short, practical example of how to use interrupts in an application.
 

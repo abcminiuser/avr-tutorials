@@ -11,8 +11,8 @@
 \cleardoublepage
 
 
-\label{chp:intro}
 \chapter{Introduction}
+\label{chp:intro}
 
 The \lstinline{PROGMEM} attribute is always a source of confusion for those beginning with AVR-GCC. The \lstinline{PROGMEM} attribute is a powerful one and holds the potential to save a lot of RAM, which is something of a limited commodity on many AVRs. Before you can use the PROGMEM attribute, you must first understand what it does and why it is useful.
 
@@ -32,12 +32,13 @@ Initial variable values and strings are copied out from program memory into RAM 
 
 The solution to the problem is forcing strings to stay in program memory and only be read out as they are needed. This is not a simple task and requires string routines specifically designed to handle strings kept solely inside the program memory space.
 
-Using the \lstinline{const} modifier on your string variables is a natural solution --- but a wrong one. A ``const'' variable can only not be modified by the program code, but it does not explicitly prevent the variable value from being copied out to the AVRs RAM on startup. Some compilers implicitly do this for you, but GCC needs to be explicitly told that the contents must live in program memory for the entire duration of the program's execution.
+Using the \lstinline{const} modifier on your string variables is a natural solution --- but a wrong one. A \lstinline{const} variable can only not be modified by the program code, but it does not explicitly prevent the variable value from being copied out to the AVRs RAM on startup. Some compilers implicitly do this for you, but GCC needs to be explicitly told that the contents must live in program memory for the entire duration of the program's execution.
 
-\label{chp:pgmspace}
+
 \chapter{Basic PROGMEM Use}
+\label{chp:pgmspace}
 
-The \textit{avr-libc} library contains a header file, \lstinline{<avr/pgmspace.h>}, which contains all the interfacing information needed to allow you to specify data which is to be kept inside the AVR's flash memory. To use the pgmspace.h functions, you need to include the header at the start of your C file(s):
+The \textit{avr-libc} library contains a header file, \lstinline{<avr/pgmspace.h>}, which contains all the interfacing information needed to allow you to specify data which is to be kept inside the AVR's flash memory. To use the \lstinline{pgmspace.h} functions, you need to include the header at the start of your C file(s):
 
 \begin{center}
 \begin{lstlisting}
@@ -87,7 +88,7 @@ strcmp_P("RAM STRING", PSTR("FLASH STRING"));
 \end{lstlisting}
 \end{center}
 
-For a full list of the avaliable string functions, check out the \textit{avr-libc} documentation which is installed with your WinAVR or Atmel Toolchain installation.
+For a full list of the available string functions, check out the \textit{avr-libc} documentation which is installed with your WinAVR or Atmel Toolchain installation.
 
 But what if you have your own string function, like a USART-transmitting routine? Lets look at a typical example:
 
@@ -135,10 +136,10 @@ USART_TxString_P(TestFlashStr);
 This should give you a basic idea of how to store strings and keep them in flash memory space. What follows is the second half of this tutorial, for more advanced uses of the \lstinline{PROGMEM} attribute.
 
 
-\label{chp:advprogmem}
 \chapter{More advanced uses of PROGMEM}
+\label{chp:advprogmem}
 
-Ok, so by now you should be able to create and use your own simple strings stored in program memory. But that's not the end of the \lstinline{PROGMEM} road --- there's still plenty more to learn! In this chapter, I'll cover two slightly more advanced techniques using the \lstinline{PROGMEM} attribute. The first part will lead on to the second, so please read both.
+By now you should be able to create and use your own simple strings stored in program memory. But that's not the end of the \lstinline{PROGMEM} road --- there's still plenty more to learn! In this chapter, I'll cover two slightly more advanced techniques using the \lstinline{PROGMEM} attribute. The first part will lead on to the second, so please read both.
 
 \section{Storing data arrays in program memory}
 
@@ -324,12 +325,12 @@ void main(void)
 \end{lstlisting}
 \end{center}
 
-I recommend looking through the \textit{avr-libc} documentation of the \lstinline{<avr/pgmspace.h>} header documentation section for information about the other \lstinline{PROGMEM} related library functions avaliable. Other functions --- such as \lstinline{pgm_read_dword()}, which reads four bytes (double that of a word for the AVR architecture) --- behave in a similar manner to the functions detailed in this tutorial and might be of use for your end-application.
+I recommend looking through the \textit{avr-libc} documentation of the \lstinline{<avr/pgmspace.h>} header documentation section for information about the other \lstinline{PROGMEM} related library functions available. Other functions --- such as \lstinline{pgm_read_dword()}, which reads four bytes (double that of a word for the AVR architecture) --- behave in a similar manner to the functions detailed in this tutorial and might be of use for your end-application.
 
 
 \section{PROGMEM Strings and \texttt{printf()}}
 
-Finally, let's cover another advanced use case of \lstinline{PROGMEM} strings; printing them out using the C string formatting library function \lstinline{printf()}. Not everyone is a fan of the string formatting functions located in the C standard library's \lstinline{<stdio.h>} header due to their large size and slow execution speed, but they can make complex applications quite a bit simpler if you can stomache the size/performance penalties. Lots of applications will typically contain code that looks something like this:
+Finally, let's cover another advanced use case of \lstinline{PROGMEM} strings; printing them out using the C string formatting library function \lstinline{printf()}. Not everyone is a fan of the string formatting functions located in the C standard library's \lstinline{<stdio.h>} header due to their large size and slow execution speed, but they can make complex applications quite a bit simpler if you can stomach the size/performance penalties. Lots of applications will typically contain code that looks something like this:
 
 \begin{center}
 \begin{lstlisting}

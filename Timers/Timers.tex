@@ -11,8 +11,8 @@
 \cleardoublepage
 
 
-\label{chp:Intro}
 \chapter{Introduction}
+\label{chp:Intro}
 The timer systems on the AVR series of Microcontrollers are complex beasts. They have a myriad of uses ranging from simple delay intervals right up to complex Pulse Width Modulation (PWM) signal generation. However, despite the surface complexity, the function of the timer subsystem can be condensed into one obvious function: to measure time.
 
 We use timers every day---the most simple one can be found on your wrist. A simple clock will time the seconds, minutes and hours elapsed in a given day---or in the case of a twelve hour clock, since the last half-day. AVR timers do a similar job, measuring a given time interval.
@@ -43,8 +43,8 @@ In the sections dealing with toggling a LED, it is assumed to be connected to PO
 
 To start off, we will deal with basic timer functionality and move on from there.
 
-\label{chp:TimersFcpu}
 \chapter{Timers running at Fcpu}
+\label{chp:TimersFcpu}
 
 We'll start with a simple example. We'll create a simple program to flash a LED at about 10Hz. Simple, right? Making a LED blink at 10Hz requires us to both turn it on and off again, so we need to perform a toggle of the LED's output state every \(\frac{1}{20}\)th of a second.
 
@@ -221,8 +221,8 @@ And there we have it! We've just created a very basic program that will toggle o
 Next, we'll learn about the prescaler so we can try to slow things down a bit.
 
 
-\label{chp:PrescaledTimers}
 \chapter{Prescaled Timers}
+\label{chp:PrescaledTimers}
 
 In chapter \ref{chp:TimersFcpu} of this tutorial we learned how to set up our 16-bit timer 1 for a \(\frac{1}{20}\) second delay. This short (to us humans) delay is actually quite long to our AVR - 50,000 cycles in fact at 1MHz. Notice that Timer 1 can only hold a value of 0-65535 - and we've almost reached that! What do we do if we want a longer delay?
 
@@ -349,8 +349,9 @@ int main (void)
 
 Compile it, and we're done! Remember that our timer runs as soon as it gets a clock source, so with the above configuration our program will now work and the LED will now flash. The LED is toggled at a rate of 1Hz via our timer code, and two toggles are required for a full on-off cycle, giving a flashing frequency of .5Hz.
 
-\label{chp:LongFWDelays}
+
 \chapter{Long Timer Delays in Firmware}
+\label{chp:LongFWDelays}
 
 So far, we've learned how to use the timers in their most basic counting mode to delay a specified duration. However, we've also discovered a limitation of the timers --- their maximum duration that their timer count registers can hold. We've managed to get a 1Hz delay out of a prescaled 16-bit timer with a prescale, but what if we want a delay of a minute? An hour? A week or year?
 
@@ -472,8 +473,8 @@ int main (void)
 Compile and run, and the LED should toggle once per minute. By extending this technique, we can produce delays of an arbitrary duration. One point of interest is to note that any timing errors compound - so if the timer input frequency is 1.1MHz rather than 1.0MHz our one minute timer will be sixty times that small error out in duration. For this reason it is important to ensure that the timer's clock is as accurate as possible, to reduce long-term errors as much as possible.
 
 
-\label{chp:CTCMode}
 \chapter{The CTC Timer Mode}
+\label{chp:CTCMode}
 
 Up until now, we've been dealing with the timers in a very basic way - starting them counting, then comparing in our main routine against a wanted value. This is rather inefficient - we waste cycles checking the timer's value every time the loop runs, and slightly inaccurate (as the timer may pass our wanted compare value slightly while processing the loop). What if there was a better way?
 
@@ -633,8 +634,8 @@ int main (void)
 And there we have it, a working .5Hz LED flasher using the CTC timer mode!
 
 
-\label{chp:CTCInt}
 \chapter{CTC Mode using Interrupts}
+\label{chp:CTCInt}
 
 For all our previous experiments, we've been using a looped test in our main code to determine when to execute the timer action code. That's fine, but what if we want to shift the responsibility of choosing when to execute the timer code to the AVR hardware instead? To do this, we need to look at the timer interrupts.
 
@@ -830,8 +831,8 @@ ISR(TIMER1_COMPA_vect)
 And our example is finished! Running this will give a nice .5Hz LED flasher using the timer's event interrupts. The nice thing is that the timer operation is now completely handled for us in hardware --- once set up, we just need to react to the events we've configured. Notice that our main loop is now empty; if this is the case you may put sleep commands inside the main loop to save power between compares.
 
 
-\label{chp:HWCTC}
 \chapter{Pure Hardware CTC}
+\label{chp:HWCTC}
 
 You probably think by now that we've improved our example as much as possible --- after all, what more improvements are there to make? Well, it's time to finish of the CTC topic by looking at the hardware outputs.
 
@@ -934,8 +935,8 @@ int main (void)
 Simple, isn't it! We've now created the simplest (code-wise) LED flasher possible using pure hardware functionality. Running this will cause the LED to flash at .5Hz, without any code other than the timer initialization!
 
 
-\label{chp:Overflows}
 \chapter{The Overflow Event}
+\label{chp:Overflows}
 
 Well, now that we've had fun creating a LED flasher via a variety of software and hardware CTC methods, we'll move on to one last LED flashing program. This time we'll be using a different Timer event to manage the toggling of the LED: the overflow.
 
@@ -1160,8 +1161,8 @@ ISR(TIMER1_OVF_vect)
 All done! This simple program will cause the LED to toggle each time the overflow occurs and serves as a practical use of the overflow interrupt.
 
 
-\label{chp:OverflowCTC}
 \chapter{Overflow as CTC}
+\label{chp:OverflowCTC}
 
 One neat application of the overflow event is for creating a CTC timer on AVRs which don't support true hardware CTC. It's not as neat as the pure hardware CTC discussed in chapter \ref{chp:HWCTC}, but faster than the pure software CTC discussed in chapter \ref{chp:TimersFcpu}.
 
@@ -1278,5 +1279,6 @@ ISR(TIMER1_OVF_vect)
 \end{center}
 
 And done! This is less preferable to the pure hardware CTC mode, as it requires a tiny bit more work on both the programmer and the AVR to function. However, it will work just fine for AVRs lacking the complete CTC timer functionality.
+
 
 \end{document}

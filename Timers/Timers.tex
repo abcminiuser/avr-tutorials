@@ -952,7 +952,7 @@ So why would we need the overflow interrupt? Well, I leave that as an exercise t
 
 Calculating the frequency of the flashing is a little different to our previous examples, as now we have to calculate in reverse (to find the frequency from the timer count and timer resolution rather than the timer count from a known frequency and timer resolution). We'll still be working with our 16-bit timer 1 for this example, to be consistent with previous chapters.
 
-Let's go back to our one of the timer equations we used back in chapter \ref{chp:TimersFcpu}:
+Let's go back to our one of the timer equations we used back in chapter \ref{chp:PrescaledTimers}:
 
 \begin{displaymath}
 \text{Target Timer Count} = (\frac{\text{Input Frequency}}{\text{Prescale} \times \text{Target Frequency}}) - 1
@@ -1127,7 +1127,7 @@ ISR(TIMER1_OVF_vect)
 \end{lstlisting}
 \end{center}
 
-The last thing we need to do, is start the timer with a prescaler of 8. This should be easy for you to do --- if not, refer back to chapter \ref{chp:TimersFcpu}.
+The last thing we need to do, is start the timer with a prescaler of 8. This should be easy for you to do --- if not, refer back to chapter \ref{chp:PrescaledTimers}.
 
 The ATMEGA16 Datasheet, Timer 1 section tells us that for a timer running with a prescaler of 8, we need to start it with the bit \texttt{CS11} set in the control register \texttt{TCCR1B}. Adding that to our code finishes our simple program:
 
@@ -1189,7 +1189,7 @@ END ISR
 \end{lstlisting}
 \end{center}
 
-Let's examine the maths again. From chapter \ref{chp:TimersFcpu}, we know that the formula for determining the number of timer clock cycles needed for a given delay is:
+Let's examine the maths again. From chapter \ref{chp:PrescaledTimers}, we know that the formula for determining the number of timer clock cycles needed for a given delay is:
 
 \begin{displaymath}
 \text{Target Timer Count} = (\frac{\text{Input Frequency}}{\text{Prescale} \times \text{Target Frequency}}) - 1
@@ -1201,7 +1201,7 @@ Which works for a fixed \texttt{BOTTOM} of zero, and a variable \texttt{TOP}. We
 \text{Reload Timer Value} = (2^\text{Bits} - 1) - (\frac{\text{Input Frequency}}{\text{Prescale} \times \text{Target Frequency}})
 \end{displaymath}
 
-Let's go with the previous example in chapter \ref{chp:TimersFcpu}: a .5Hz flasher, using a 1MHz clock and a prescale of 64. We found the timer count to be 15625 for those conditions. Plugging it into the above Reload Timer Value formula gives:
+Let's go with the previous example in chapter \ref{chp:PrescaledTimers}: a .5Hz flasher, using a 1MHz clock and a prescale of 64. We found the timer count to be 15625 for those conditions. Plugging it into the above Reload Timer Value formula gives:
 
 \begin{displaymath}
 \begin{array}{rcl}

@@ -1204,14 +1204,14 @@ Let's go with the previous example in chapter \ref{chp:TimersFcpu}: a .5Hz flash
 
 \begin{displaymath}
 \begin{array}{rcl}
-\text{Reload Timer Value} & = & (2^\text{Bits} - 1) - 15624 \\
-                          & = & (2^{16} - 1) - 15624 \\
-                          & = & 65535 - 15624 \\
-                          & = & 49911 \\
+\text{Reload Timer Value} & = & (2^\text{Bits} - 1) - 15625 \\
+                          & = & (2^{16} - 1) - 15625 \\
+                          & = & 65535 - 15625 \\
+                          & = & 49910 \\
 \end{array}
 \end{displaymath}
 
-So we need to preload and reload our overflow timer on each overflow with the value 49911 to get our desired 1Hz delay. Since we've already gone over the code for an interrupt-driven overflow example in chapter \ref{chp:Overflows}, we'll build upon that.
+So we need to preload and reload our overflow timer on each overflow with the value 49910 to get our desired 1Hz delay. Since we've already gone over the code for an interrupt-driven overflow example in chapter \ref{chp:Overflows}, we'll build upon that.
 
 \begin{center}
 \begin{lstlisting}
@@ -1259,7 +1259,7 @@ int main (void)
    TIMSK |= (1 << TOIE1); // Enable overflow interrupt
    sei(); // Enable global interrupts
 
-   TCNT1 = 49911; // Preload timer with precalculated value
+   TCNT1 = 49910; // Preload timer with precalculated value
 
    TCCR1B |= ((1 << CS10) | (1 << CS11)); // Set up timer at Fcpu/64
 
@@ -1272,7 +1272,7 @@ int main (void)
 ISR(TIMER1_OVF_vect)
 {
    PORTB ^= (1 << 0); // Toggle the LED
-   TCNT1  = 49911; // Reload timer with precalculated value
+   TCNT1  = 49910; // Reload timer with precalculated value
 }
 \end{lstlisting}
 \end{center}

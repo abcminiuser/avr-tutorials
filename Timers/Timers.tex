@@ -771,7 +771,7 @@ int main (void)
 
    TCCR1B |= (1 << WGM12); // Configure timer 1 for CTC mode
 
-   TIMSK |= (1 << OCIE1A); // Enable CTC interrupt
+   TIMSK1 |= (1 << OCIE1A); // Enable CTC interrupt
 
    // TODO: Enable global interrupts
 
@@ -807,7 +807,7 @@ int main (void)
 
    TCCR1B |= (1 << WGM12); // Configure timer 1 for CTC mode
 
-   TIMSK |= (1 << OCIE1A); // Enable CTC interrupt
+   TIMSK1 |= (1 << OCIE1A); // Enable CTC interrupt
 
    sei(); //  Enable global interrupts
 
@@ -1109,7 +1109,7 @@ int main (void)
 {
    DDRB |= (1 << 0); // Set LED as output
 
-   TIMSK |= (1 << TOIE1); // Enable overflow interrupt
+   TIMSK1 |= (1 << TOIE1); // Enable overflow interrupt
    sei(); // Enable global interrupts
 
    // TODO: Start timer at Fcpu/8
@@ -1140,7 +1140,7 @@ int main (void)
 {
    DDRB |= (1 << 0); // Set LED as output
 
-   TIMSK |= (1 << TOIE1); // Enable overflow interrupt
+   TIMSK1 |= (1 << TOIE1); // Enable overflow interrupt
    sei(); // Enable global interrupts
 
    TCCR1B |= (1 << CS11); // Start timer at Fcpu/8
@@ -1223,7 +1223,7 @@ int main (void)
 {
    DDRB |= (1 << 0); // Set LED as output
 
-   TIMSK |= (1 << TOIE1); // Enable overflow interrupt
+   TIMSK1 |= (1 << TOIE1); // Enable overflow interrupt
    sei(); // Enable global interrupts
 
    // TODO: Preload timer with precalculated value
@@ -1257,7 +1257,7 @@ int main (void)
 {
    DDRB |= (1 << 0); // Set LED as output
 
-   TIMSK |= (1 << TOIE1); // Enable overflow interrupt
+   TIMSK1 |= (1 << TOIE1); // Enable overflow interrupt
    sei(); // Enable global interrupts
 
    TCNT1 = 49910; // Preload timer with precalculated value

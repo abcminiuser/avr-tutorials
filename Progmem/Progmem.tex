@@ -388,4 +388,14 @@ void PrintParameterValue(const char* ParameterName, uint8_t ParameterValue)
 
 Unfortunately no such extensions exist for non-string inputs; so if you have integers for example that you have located into FLASH with \lstinline{PROGMEM}, you will need to read them out and buffer them into a RAM location before using \lstinline{printf()}.
 
+One caveat to the above: newer versions of the C specification reserve the \lstinline{%S} formatting specifier for wide (Unicode) character strings, which is at odds with avr-libc's use of it for standard strings located in FLASH memory. This can trigger compile warnings on newer versions of avr-gcc:
+
+\begin{center}
+\begin{lstlisting}[language=bash]
+warning: format '%S' expects argument of type 'wchar_t *', but argument 2 has type 'const char *' [-Wformat=]
+\end{lstlisting}
+\end{center}
+
+The only way to work around this for now is to compile with the \lstinline{-Wno-format} compile option, which disables the in-built compile-time checking of \lstinline{printf()} and \lstinline{scanf()} style formatting strings.
+
 \end{document}

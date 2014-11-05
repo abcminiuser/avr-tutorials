@@ -436,7 +436,7 @@ int main (void)
 \end{lstlisting}
 \end{center}
 
-Now that we have our new program's structure, replacing the \texttt{TODO}s becomes very simple. We want a target count of 60, which is well within the range of an unsigned integer variable, so we'll make our counter variable of type unsigned integer. The rest of the code is fairly straightforward, so I'll add it all in at once:
+Now that we have our new program's structure, replacing the \texttt{TODO}s becomes very simple. We want a target count of 60, which is well within the range of an 8-bit unsigned char variable, so we'll make our counter variable of type \texttt{unsigned char} to give us a range of up to 255 (\(2^{8}-1\)) seconds. The rest of the code is fairly straightforward, so I'll add it all in at once:
 
 \begin{center}
 \begin{lstlisting}

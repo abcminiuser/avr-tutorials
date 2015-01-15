@@ -89,41 +89,53 @@ int main (void)
 
 There, we're almost done setting up the USART already! The last thing to set for basic serial communications is the baud rate register. This register sets the clock divider for the USART which is used as a timebase to sample the incoming data at the correct frequency. It also gives the timebase for sending data, so it's vital for RS-232 serial communications.
 
-The baud rate register is 16-bit, split into two 8-bit registers as is the case with all 16-bit registers in the AVR device family. To set our baud rate prescaler value, we first need to determine it. Note that the baud rate register value is \textbf{not} the same as the baud rate you wish to use --- this is a common point of failure amongst those new to the serial peripheral. Instead, the value must be derived from the following formula:
+The baud rate register (\textbf{UBRR}) is 16-bit, split into two 8-bit registers as is the case with all 16-bit registers in the AVR device family. To set our baud rate prescaler value, we first need to determine it. Note that the baud rate register value is \textbf{not} the same as the baud rate you wish to use --- this is a common point of failure amongst those new to the serial peripheral. Instead, the value must be derived from the following formula (taken from a random AVR8 device datasheet from Atmel):
 
 \begin{displaymath}
-    \text{BaudValue} = (((\text{F\subscript{cpu}} / (\text{USART\_BAUDRATE} \times 16))) - 1)
+    \text{Baud Value} = \frac{ \text{F\subscript{cpu}} }{ 16 \times \text{BAUD} }
 \end{displaymath}
 
-Where \emph{F\subscript{cpu}} is your AVR's system clock frequency (in Hz), and \emph{USART\_BAUDRATE} is the desired communication baud rate.
+Where \emph{F\subscript{cpu}} is your AVR's system clock frequency (in Hz), and \emph{BAUD} is the desired communication baud rate in bit-per-second.
 
 Given my example project using a system clock of 7372800Hz and a baud rate of 9600, our formula gives:
 
 \begin{displaymath}
 \begin{array}{rcl}
-    \text{BaudValue} & = & (((\text{F\subscript{cpu}} / (\text{USART\_BAUDRATE} \times 16))) - 1) \\
-    \text{BaudValue} & = & (7372800 / (9600 \times 16) - 1) \\
-    \text{BaudValue} & = & (7372800 / 153600 - 1) \\
-    \text{BaudValue} & = & (48 - 1) \\
-    \text{BaudValue} & = & 47 \\
+    \text{Baud Value} & = & \frac{ \text{F\subscript{cpu}} }{ 16 \times \text{BAUD} } \\
+    \text{Baud Value} & = & \frac{ 7372800 } { 9600 \times 16 } - 1) \\
+    \text{Baud Value} & = & \frac{ 7372800 } { 153600 } - 1 \\
+    \text{Baud Value} & = & 48 - 1 \\
+    \text{Baud Value} & = & 47 \\
 \end{array}
 \end{displaymath}
 
-To make our life easier, we can turn this formula into a set of handy macros. The system clock frequency \emph{F\subscript{cpu}} is usually defined as a macro called \texttt{F\_CPU} in AVR-GCC via your makefile, so all that is needed is the baud rate:
+However, it just so happens that the values I chose give a nice, round number result. This isn't always the case; sometimes you'll end up with a required baud rate of 7.5 or similar (for example, if you have a F\subscript{cpu} of 16MHz, and wanted a baud of 115200, giving a required \textbf{UBRR} of 138.88). Until such time that Atmel makes a USART that accepts floating point numbers, we need to round to the nearest integer.
+
+To make our life easier, we can turn this formula into a set of handy macros. The system clock frequency \emph{F\subscript{cpu}} is usually defined as a macro called \texttt{F\_CPU} in AVR-GCC via your makefile, so all that is needed is the baud rate.
 
 \begin{center}
 \begin{lstlisting}
 #define USART_BAUDRATE 9600
-#define BAUD_PRESCALE (((F_CPU / (USART_BAUDRATE * 16UL))) - 1)
+
+// Naiive Version - has rounding bugs!
+//#define BAUD_PRESCALE (((F_CPU / (USART_BAUDRATE * 16UL))) - 1)
+
+// Better Version - see text below
+#define BAUD_PRESCALE ((((F_CPU / 16) + (Baud / 2)) / (Baud)) - 1)
 \end{lstlisting}
 \end{center}
 
-This avoids ``magic numbers'' (unexplained constants) in our source code, and makes changing the baud rate later on very easy --- just change the \texttt{BAUD\_RATE} macro value and recompile your code. Now, we need to load this into the baud rate registers, named \texttt{UBRRH} (for the high byte) and \texttt{UBRRL} (for the low byte). This is simple via a simple bitshift to grab the upper eight bits of the \texttt{BAUD\_PRESCALE} constant:
+This avoids hard-coded ``magic numbers'' (unexplained constants) in our source code, and makes changing the baud rate later on very easy --- just change the \texttt{USART\_BAUDRATE} macro value and recompile your code. You'll notice that the above macro doesn't correspond 1-to-1 with the original formula from the datasheet; the adjusted macro is designed to perform the rounding required to ensure the closest fit to the target baud value, via some algebra trickery and a little knowledge of how integer rounding works.
+
+Now, we need to load this into the baud rate registers, named \texttt{UBRRH} (for the high byte) and \texttt{UBRRL} (for the low byte). This is simple via a simple bit-shift to grab the upper eight bits of the \texttt{BAUD\_PRESCALE} constant:
 
 \begin{center}
 \begin{lstlisting}
-UBRRH = (BAUD_PRESCALE >> 8); // Load upper 8-bits of the baud rate value into the high byte of the UBRR register
-UBRRL = BAUD_PRESCALE; // Load lower 8-bits of the baud rate value into the low byte of the UBRR register
+// Load upper 8-bits of the baud rate value into the high byte of the UBRR register
+UBRRH = (BAUD_PRESCALE >> 8);
+
+// Load lower 8-bits of the baud rate value into the low byte of the UBRR register
+UBRRL = BAUD_PRESCALE;
 \end{lstlisting}
 \end{center}
 
@@ -190,7 +202,7 @@ Next, our USART initializing sequence:
 #include <avr/io.h>
 
 #define USART_BAUDRATE 9600
-#define BAUD_PRESCALE (((F_CPU / (USART_BAUDRATE * 16UL))) - 1)
+#define BAUD_PRESCALE ((((F_CPU / 16) + (Baud / 2)) / (Baud)) - 1)
 
 int main (void)
 {
@@ -210,7 +222,7 @@ Now, an infinite loop to contain our echo code:
 #include <avr/io.h>
 
 #define USART_BAUDRATE 9600
-#define BAUD_PRESCALE (((F_CPU / (USART_BAUDRATE * 16UL))) - 1)
+#define BAUD_PRESCALE ((((F_CPU / 16) + (Baud / 2)) / (Baud)) - 1)
 
 int main (void)
 {
@@ -235,7 +247,7 @@ And some echo code to complete our example. We'll add in a local variable called
 #include <avr/io.h>
 
 #define USART_BAUDRATE 9600
-#define BAUD_PRESCALE (((F_CPU / (USART_BAUDRATE * 16UL))) - 1)
+#define BAUD_PRESCALE ((((F_CPU / 16) + (Baud / 2)) / (Baud)) - 1)
 
 int main (void)
 {

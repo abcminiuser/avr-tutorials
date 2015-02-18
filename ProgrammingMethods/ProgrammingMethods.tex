@@ -20,7 +20,7 @@ There are many ways to program AVR microcontrollers. Since many people ask about
 \small{
 	\begin{tabular}{ll}
 	\textbf{Supported By:}			&	Most MEGA and TINY devices \\
-	\textbf{Supported Programmers:}	&	\vtop{\hbox{\strut AVRISP MKI/II, JTAG MKII, STK500, STK600,} \hbox{\strut Dragon, AVRISP clones, AVR910 Programmers, AVRONE}}
+	\textbf{Supported Programmers:}	&	\vtop{\hbox{\strut AVRISP, AVRISP MKII,} \hbox{\strut JTAG-ICE MKII, JTAG-ICE3, Atmel-ICE, AVRONE} \hbox{\strut STK500, STK600, Dragon}}
 	\end{tabular}
 }
 
@@ -35,7 +35,7 @@ ISP requires that the target AVR is running at a clock rate of at least four tim
 \small{
 	\begin{tabular}{ll}
 	\textbf{Supported By:}			&	AVR32 and most large pin count MEGA and XMEGA devices \\
-	\textbf{Supported Programmers:}	&	\vtop{\hbox{\strut JTAG-ICE, JTAG-ICE MKII, JTAG-ICE3, Dragon,} \hbox{\strut JTAG-ICE clones, AVRONE, STK600 (programming only)}}
+	\textbf{Supported Programmers:}	&	\vtop{\hbox{\strut JTAG-ICE MKII, JTAG-ICE3, Atmel-ICE, AVRONE} \hbox{\strut STK600 (programming only), Dragon}}
 	\end{tabular}
 }
 
@@ -52,7 +52,7 @@ JTAG-ICE clones are available for low prices, however their limited compatibilit
 \small{
 	\begin{tabular}{ll}
 	\textbf{Supported By:}			&	Most low pin count MEGA and most TINY devices \\
-	\textbf{Supported Programmers:}	&	\vtop{\hbox{\strut JTAG-ICE MKII, JTAG-ICE3, Dragon, AVRONE}}
+	\textbf{Supported Programmers:}	&	\vtop{\hbox{\strut JTAG-ICE MKII, JTAG-ICE3, Atmel-ICE, AVRONE}}
 	\end{tabular}
 }
 
@@ -78,7 +78,7 @@ Bootloaders are widely available on the internet for download, but they suffer f
 \small{
 	\begin{tabular}{ll}
 	\textbf{Supported By:}			&	Most MEGA devices \\
-	\textbf{Supported Programmers:}	&	\vtop{\hbox{\strut STK500, STK600, Dragon, Homebrew Dongles, AVRONE}}
+	\textbf{Supported Programmers:}	&	\vtop{\hbox{\strut AVRONE} \hbox{\strut STK500, STK600, Dragon}}
 	\end{tabular}
 }
 
@@ -91,7 +91,7 @@ Both the STK500 and the Dragon supports HVPP. During HVPP, the target's /RESET p
 \small{
 	\begin{tabular}{ll}
 	\textbf{Supported By:}			&	Many TINY devices \\
-	\textbf{Supported Programmers:}	&	\vtop{\hbox{\strut STK500, STK600, Dragon, Homebrew Dongles, AVRONE}}
+	\textbf{Supported Programmers:}	&	\vtop{\hbox{\strut AVRONE} \hbox{\strut STK500, STK600, Dragon}}
 	\end{tabular}
 }
 
@@ -102,7 +102,7 @@ HVSP is similar to HVPP, except the data transfer is performed serially rather t
 \small{
 	\begin{tabular}{ll}
 	\textbf{Supported By:}			&	Most XMEGA devices \\
-	\textbf{Supported Programmers:}	&	\vtop{\hbox{\strut STK600, JTAG-ICE3, AVRONE}}
+	\textbf{Supported Programmers:}	&	\vtop{\hbox{\strut JTAG-ICE3, ATMEL-ICE, AVRONE} \hbox{\strut STK600, Dragon}}
 	\end{tabular}
 }
 
@@ -113,18 +113,18 @@ PDI is the new programming interface based on the debugWire protocol, for the XM
 \small{
 	\begin{tabular}{ll}
 	\textbf{Supported By:}			&	6-Pin TINY AVRs (ATTINY10, etc.) \\
-	\textbf{Supported Programmers:}	&	\vtop{\hbox{\strut STK600, JTAG-ICE3, Dragon, AVRISP MKII}}
+	\textbf{Supported Programmers:}	&	\vtop{\hbox{\strut AVRISP-MKII} \hbox{\strut JTAG-ICE3, ATMEL-ICE} \hbox{\strut STK600}}
 	\end{tabular}
 }
 
-TPI is a very tiny programming interface for the newer TINY line of AVRs with limited pins, like the 6 pin ATTINY10. Like dW, TPI uses the device's /RESET line as part of the communication interface, but there the similarity ends. Since the pint-sized TINY AVRs lack a on-chip debugging circuit, the TPI protocol uses a new programming interface of three pins, in a half-duplex protocol. Because the /RESET line needs to be raised to +12V for programming when the device's RSTDSB pin is set, this is currently only supported by the newer STK600 programming board.
+TPI is a very tiny programming interface for the newer TINY line of AVRs with limited pins, like the 6 pin ATTINY10. Like dW, TPI uses the device's /RESET line as part of the communication interface, but there the similarity ends. Since the pint-sized TINY AVRs lack a on-chip debugging circuit, the TPI protocol uses a new programming interface of three pins, in a half-duplex protocol. Because the /RESET line needs to be raised to +12V for programming when the device's RSTDSBL pin is set, this is currently only supported by the newer STK600 programming board.
 
 
 \section{aWire (aW)}
 \small{
 	\begin{tabular}{ll}
 	\textbf{Supported By:}			&	Most AVR32 devices \\
-	\textbf{Supported Programmers:}	&	\vtop{\hbox{\strut STK600, JTAG-ICE3, AVRONE}}
+	\textbf{Supported Programmers:}	&	\vtop{\hbox{\strut JTAG-ICE3, ATMEL-ICE, AVRONE} \hbox{\strut STK600}}
 	\end{tabular}
 }
 

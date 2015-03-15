@@ -121,7 +121,7 @@ To make our life easier, we can turn this formula into a set of handy macros. Th
 //#define BAUD_PRESCALE (((F_CPU / (USART_BAUDRATE * 16UL))) - 1)
 
 // Better Version - see text below
-#define BAUD_PRESCALE ((((F_CPU / 16) + (Baud / 2)) / (Baud)) - 1)
+#define BAUD_PRESCALE ((((F_CPU / 16) + (USART_BAUDRATE / 2)) / (USART_BAUDRATE)) - 1)
 \end{lstlisting}
 \end{center}
 
@@ -202,7 +202,7 @@ Next, our USART initializing sequence:
 #include <avr/io.h>
 
 #define USART_BAUDRATE 9600
-#define BAUD_PRESCALE ((((F_CPU / 16) + (Baud / 2)) / (Baud)) - 1)
+#define BAUD_PRESCALE ((((F_CPU / 16) + (USART_BAUDRATE / 2)) / (USART_BAUDRATE)) - 1)
 
 int main (void)
 {
@@ -222,7 +222,7 @@ Now, an infinite loop to contain our echo code:
 #include <avr/io.h>
 
 #define USART_BAUDRATE 9600
-#define BAUD_PRESCALE ((((F_CPU / 16) + (Baud / 2)) / (Baud)) - 1)
+#define BAUD_PRESCALE ((((F_CPU / 16) + (USART_BAUDRATE / 2)) / (USART_BAUDRATE)) - 1)
 
 int main (void)
 {
@@ -247,7 +247,7 @@ And some echo code to complete our example. We'll add in a local variable called
 #include <avr/io.h>
 
 #define USART_BAUDRATE 9600
-#define BAUD_PRESCALE ((((F_CPU / 16) + (Baud / 2)) / (Baud)) - 1)
+#define BAUD_PRESCALE ((((F_CPU / 16) + (USART_BAUDRATE / 2)) / (USART_BAUDRATE)) - 1)
 
 int main (void)
 {

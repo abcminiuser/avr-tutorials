@@ -31,7 +31,7 @@ From the last serial tutorial, we have created a simple program from scratch whi
 #include <avr/io.h>
 
 #define USART_BAUDRATE 9600
-#define BAUD_PRESCALE ((((F_CPU / 16) + (Baud / 2)) / (Baud)) - 1)
+#define BAUD_PRESCALE ((((F_CPU / 16) + (USART_BAUDRATE / 2)) / (USART_BAUDRATE)) - 1)
 
 int main (void)
 {
@@ -100,7 +100,7 @@ The new program code looks like this:
 #include <avr/interrupt.h>
 
 #define USART_BAUDRATE 9600
-#define BAUD_PRESCALE ((((F_CPU / 16) + (Baud / 2)) / (Baud)) - 1)
+#define BAUD_PRESCALE ((((F_CPU / 16) + (USART_BAUDRATE / 2)) / (USART_BAUDRATE)) - 1)
 
 int main (void)
 {
@@ -178,7 +178,7 @@ Let's take a look at the latest incarnation of our test code:
 #include <avr/interrupt.h>
 
 #define USART_BAUDRATE 9600
-#define BAUD_PRESCALE ((((F_CPU / 16) + (Baud / 2)) / (Baud)) - 1)
+#define BAUD_PRESCALE ((((F_CPU / 16) + (USART_BAUDRATE / 2)) / (USART_BAUDRATE)) - 1)
 
 int main (void)
 {
@@ -252,7 +252,7 @@ Now we have a working interrupt driven serial example:
 #include <avr/interrupt.h>
 
 #define USART_BAUDRATE 9600
-#define BAUD_PRESCALE ((((F_CPU / 16) + (Baud / 2)) / (Baud)) - 1)
+#define BAUD_PRESCALE ((((F_CPU / 16) + (USART_BAUDRATE / 2)) / (USART_BAUDRATE)) - 1)
 
 int main (void)
 {

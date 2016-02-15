@@ -92,7 +92,7 @@ There, we're almost done setting up the USART already! The last thing to set for
 The baud rate register (\textbf{UBRR}) is 16-bit, split into two 8-bit registers as is the case with all 16-bit registers in the AVR device family. To set our baud rate prescaler value, we first need to determine it. Note that the baud rate register value is \textbf{not} the same as the baud rate you wish to use --- this is a common point of failure amongst those new to the serial peripheral. Instead, the value must be derived from the following formula (taken from a random AVR8 device datasheet from Atmel):
 
 \begin{displaymath}
-    \text{Baud Value} = \frac{ \text{F\subscript{cpu}} }{ 16 \times \text{BAUD} }
+    \text{Baud Value} = \frac{ \text{F\subscript{cpu}} }{ 16 \times \text{BAUD} } - 1
 \end{displaymath}
 
 Where \emph{F\subscript{cpu}} is your AVR's system clock frequency (in Hz), and \emph{BAUD} is the desired communication baud rate in bit-per-second.
@@ -101,7 +101,7 @@ Given my example project using a system clock of 7372800Hz and a baud rate of 96
 
 \begin{displaymath}
 \begin{array}{rcl}
-    \text{Baud Value} & = & \frac{ \text{F\subscript{cpu}} }{ 16 \times \text{BAUD} } \\
+    \text{Baud Value} & = & \frac{ \text{F\subscript{cpu}} }{ 16 \times \text{BAUD} } - 1 \\
     \text{Baud Value} & = & \frac{ 7372800 } { 9600 \times 16 } - 1 \\
     \text{Baud Value} & = & \frac{ 7372800 } { 153600 } - 1 \\
     \text{Baud Value} & = & 48 - 1 \\

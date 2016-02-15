@@ -102,7 +102,7 @@ Given my example project using a system clock of 7372800Hz and a baud rate of 96
 \begin{displaymath}
 \begin{array}{rcl}
     \text{Baud Value} & = & \frac{ \text{F\subscript{cpu}} }{ 16 \times \text{BAUD} } \\
-    \text{Baud Value} & = & \frac{ 7372800 } { 9600 \times 16 } - 1) \\
+    \text{Baud Value} & = & \frac{ 7372800 } { 9600 \times 16 } - 1 \\
     \text{Baud Value} & = & \frac{ 7372800 } { 153600 } - 1 \\
     \text{Baud Value} & = & 48 - 1 \\
     \text{Baud Value} & = & 47 \\
@@ -117,7 +117,7 @@ To make our life easier, we can turn this formula into a set of handy macros. Th
 \begin{lstlisting}
 #define USART_BAUDRATE 9600
 
-// Naiive Version - has rounding bugs!
+// Naive Version - has rounding bugs!
 //#define BAUD_PRESCALE (((F_CPU / (USART_BAUDRATE * 16UL))) - 1)
 
 // Better Version - see text below
